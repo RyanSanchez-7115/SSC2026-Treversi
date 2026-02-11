@@ -1,43 +1,59 @@
-// MARK: - 安全启动：硬编码的 radius=2 六边形棋盘 (24个三角形)
-// 我们先确保游戏引擎能运行，稍后可以替换为更通用的生成算法。
+// MARK: - 通用六边形棋盘
+
 struct HexagonBoard: BoardGeometry {
     
-    let radius: Int = 2 // 固定为2
+    let radius: Int
     var displayName: String { "经典六边形" }
     var description: String { "三角密铺的古老契约。" }
     
     // 一个预先计算好的、保证正确的坐标集合（对应radius=2的24个三角形）
+//    var allCoordinates: Set<TriangleCoordinate> {
+//        return [
+//            //第一圈层
+//            TriangleCoordinate(q: 0, r: 0, isPointingUp: false),
+//            TriangleCoordinate(q: 1, r: -1, isPointingUp: false),
+//            TriangleCoordinate(q: -1, r: -1, isPointingUp: false),
+//            TriangleCoordinate(q: 1, r: 0, isPointingUp: true),
+//            TriangleCoordinate(q: -1, r: 0, isPointingUp: true),
+//            TriangleCoordinate(q: 0, r: -1, isPointingUp: true),
+//            //第二圈层
+//            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
+//            TriangleCoordinate(q: 1, r: 1, isPointingUp: false), 
+//            TriangleCoordinate(q: -2, r: 0, isPointingUp: false),
+//            TriangleCoordinate(q: 2, r: 0, isPointingUp: false),
+//            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
+//            TriangleCoordinate(q: -3, r: -1, isPointingUp: false),
+//            TriangleCoordinate(q: 3, r: -1, isPointingUp: false),
+//            TriangleCoordinate(q: -2, r: -2, isPointingUp: false),
+//            TriangleCoordinate(q: 0, r: -2, isPointingUp: false),
+//            TriangleCoordinate(q: 2, r: -2, isPointingUp: false),
+//            TriangleCoordinate(q: -2, r: 1, isPointingUp: true),
+//            TriangleCoordinate(q: 0, r: 1, isPointingUp: true),
+//            TriangleCoordinate(q: 2, r: 1, isPointingUp: true),
+//            TriangleCoordinate(q: -3, r: 0, isPointingUp: true),
+//            TriangleCoordinate(q: 3, r: 0, isPointingUp: true),
+//            TriangleCoordinate(q: -2, r: -1, isPointingUp: true),
+//            TriangleCoordinate(q: 2, r: -1, isPointingUp: true),
+//            TriangleCoordinate(q: -1, r: -2, isPointingUp: true),
+//            TriangleCoordinate(q: 1, r: -2, isPointingUp: true),
+//        ]
+//    }
     var allCoordinates: Set<TriangleCoordinate> {
-        return [
-            //第一圈层
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false),
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false),
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false),
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true),
-            TriangleCoordinate(q: -1, r: 0, isPointingUp: true),
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true),
-            //第二圈层
-            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
-            TriangleCoordinate(q: 1, r: 1, isPointingUp: false), 
-            TriangleCoordinate(q: -2, r: 0, isPointingUp: false),
-            TriangleCoordinate(q: 2, r: 0, isPointingUp: false),
-            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
-            TriangleCoordinate(q: -3, r: -1, isPointingUp: false),
-            TriangleCoordinate(q: 3, r: -1, isPointingUp: false),
-            TriangleCoordinate(q: -2, r: -2, isPointingUp: false),
-            TriangleCoordinate(q: 0, r: -2, isPointingUp: false),
-            TriangleCoordinate(q: 2, r: -2, isPointingUp: false),
-            TriangleCoordinate(q: -2, r: 1, isPointingUp: true),
-            TriangleCoordinate(q: 0, r: 1, isPointingUp: true),
-            TriangleCoordinate(q: 2, r: 1, isPointingUp: true),
-            TriangleCoordinate(q: -3, r: 0, isPointingUp: true),
-            TriangleCoordinate(q: 3, r: 0, isPointingUp: true),
-            TriangleCoordinate(q: -2, r: -1, isPointingUp: true),
-            TriangleCoordinate(q: 2, r: -1, isPointingUp: true),
-            TriangleCoordinate(q: -1, r: -2, isPointingUp: true),
-            TriangleCoordinate(q: 1, r: -2, isPointingUp: true),
-        ]
-    }
+        var coords = Set<TriangleCoordinate>()
+        for r in 0...(radius - 1){
+            for q in -(radius*2 - 1 - r)...(radius*2 - 1 - r) {
+                let s = -q - r
+                coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
+                }
+            }
+        for r in (-radius)...(-1) {
+            for q in -(radius*2 + r)...(radius*2 + r) {
+                let s = -q - r
+                coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
+            }
+        }
+        return coords
+        }
     
     // MARK: - 邻居计算
     func neighbors(of coordinate: TriangleCoordinate) -> Set<TriangleCoordinate> {
@@ -75,5 +91,39 @@ struct HexagonBoard: BoardGeometry {
     }
     
     // 初始化器简化
-    init() {} // 固定半径，不需要参数
+    init(radius: Int) {
+        self.radius = radius
+    }
+}
+
+extension HexagonBoard {
+    func testGeneration(radius: Int) {
+        let board = HexagonBoard(radius: radius)
+        let coords = board.allCoordinates
+        
+        print("\n========== 测试半径 \(radius) 的棋盘生成 ==========")
+        print("总三角形数：\(coords.count)")
+        
+        // 按 r 坐标分组
+        var groupedByR: [Int: [TriangleCoordinate]] = [:]
+        for coord in coords {
+            groupedByR[coord.r, default: []].append(coord)
+        }
+        
+        // 按 r 值排序输出
+        for r in groupedByR.keys.sorted() {
+            let rCoords = groupedByR[r]!
+            print("r = \(r): \(rCoords.count) 个三角形")
+            // 如果需要查看具体坐标，可取消下一行注释
+            print(rCoords.map { "(\($0.q),\($0.r),\($0.isPointingUp ? "上":"下"))" }.joined(separator: ", "))
+        }
+        
+        let expected = 6 * radius * radius
+        if coords.count == expected {
+            print("✅ 数量正确：\(coords.count) = \(expected)")
+        } else {
+            print("❌ 数量错误：应有 \(expected)，实际 \(coords.count)")
+        }
+        print("========================================\n")
+    }
 }

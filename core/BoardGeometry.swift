@@ -48,13 +48,13 @@ enum BoardType: String, CaseIterable, Identifiable {
     var geometry: any BoardGeometry {
         switch self {
         case .hexagon:
-            return HexagonBoard()
+            return HexagonBoard(radius: 3) // 默认半径为3，可以根据需要调整
         case .diamond:
             // 先返回一个临时的六边形，等实现了DiamondBoard再替换
-            return HexagonBoard()
+            return HexagonBoard(radius: 3)
         case .irregular:
             // 先返回一个临时的六边形，等实现了IrregularBoard再替换
-            return HexagonBoard()
+            return HexagonBoard(radius: 3)
         }
     }
     
