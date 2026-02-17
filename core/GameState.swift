@@ -88,7 +88,7 @@ class GameState: ObservableObject {
     }
     /// **核心算法**：模拟在给定位置落子，返回将被翻转的棋子坐标数组。
     /// 如果返回数组为空，则表示落子无效。
-    private func flippedCoordinatesIfPlace(at coordinate: TriangleCoordinate, by player: Player) -> [TriangleCoordinate] {
+    func flippedCoordinatesIfPlace(at coordinate: TriangleCoordinate, by player: Player) -> [TriangleCoordinate] {
         guard board[coordinate] == .empty else { return [] }
         
         var flipped: [TriangleCoordinate] = []

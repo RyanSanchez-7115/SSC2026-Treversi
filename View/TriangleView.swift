@@ -7,27 +7,37 @@
 
 import SwiftUI
 
-// 三角形形状
+// 圆角三角形形状
 struct TriangleShape: Shape {
     let isPointingUp: Bool
-    
+    var cornerRadius: CGFloat
+
     func path(in rect: CGRect) -> Path {
         var path = Path()
+
+        let p1, p2, p3: CGPoint
         if isPointingUp {
-            // 顶点在上
-            path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            p1 = CGPoint(x: rect.midX, y: rect.minY) // Top
+            p2 = CGPoint(x: rect.minX, y: rect.maxY) // Bottom-left
+            p3 = CGPoint(x: rect.maxX, y: rect.maxY) // Bottom-right
         } else {
-            // 顶点在下
-            path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+            p1 = CGPoint(x: rect.midX, y: rect.maxY) // Bottom
+            p2 = CGPoint(x: rect.maxX, y: rect.minY) // Top-right
+            p3 = CGPoint(x: rect.minX, y: rect.minY) // Top-left
         }
+
+        // 移动到第一个圆角的起始点
+        path.move(to: CGPoint(x: p1.x + (p3.x - p1.x) * (cornerRadius / rect.width), y: p1.y + (p3.y - p1.y) * (cornerRadius / rect.height)))
+        
+        path.addArc(tangent1End: p1, tangent2End: p2, radius: cornerRadius)
+        path.addArc(tangent1End: p2, tangent2End: p3, radius: cornerRadius)
+        path.addArc(tangent1End: p3, tangent2End: p1, radius: cornerRadius)
         path.closeSubpath()
+        
         return path
     }
 }
+
 
 // 三角形视图
 struct TriangleView: View {
@@ -38,26 +48,29 @@ struct TriangleView: View {
     let side: CGFloat      // 三角形边长
     
     var body: some View {
-        TriangleShape(isPointingUp: coordinate.isPointingUp)
+       
+        let shape = TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
+        
+        shape
             .fill(fillColor)
             .overlay(
-                TriangleShape(isPointingUp: coordinate.isPointingUp)
-                    .stroke(borderColor, lineWidth: 2)
+                shape.stroke(borderColor, lineWidth: 2)
             )
             .frame(width: side, height: side * sqrt(3)/2)
     }
     
+
     var fillColor: Color {
         if isHovered {
             return Color.yellow.opacity(0.6)
         }
         switch player {
         case .black:
-            return .red
+            return .black
         case .white:
-            return .blue
+            return .white
         case .empty:
-            return isLegalMove ? Color.green.opacity(0.3) : Color.clear
+            return isLegalMove ? Color.green.opacity(0.5) : Color.black.opacity(0.2)
         }
     }
     
