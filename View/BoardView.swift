@@ -11,28 +11,36 @@ struct BoardView: View {
     let spacing: CGFloat = 7.0
     //实际的三角形棋子的边长
     var realside: CGFloat {side - spacing}
-
-    // 翻转动画状态
-        @State private var flippingAngles: [TriangleCoordinate: Double] = [:]
-        @State private var flippingOldPlayers: [TriangleCoordinate: Player] = [:]
+    // 用于悬停预览的状态
+    @State private var previewCoord: TriangleCoordinate?
+    @State private var previewFlippedCoords: Set<TriangleCoordinate> = []
     
     var body: some View {
         GeometryReader { proxy in
             ZStack {
                 ForEach(Array(geometry.allCoordinates), id: \.self) { coord in
+                    let isLegal = !gameState.isAnimating && gameState.legalMoves.contains(coord)
                     TriangleView(
                         coordinate: coord,
                         player: gameState.board[coord] ?? .empty,
-                        isLegalMove: gameState.legalMoves.contains(coord),
-                        isHovered: false, // 悬停预览稍后实现
+                        isLegalMove:  isLegal,
+                        isHovered: false, // for apple pencil hover, currently not used
                         side: realside
                     )
                     .position(position(for: coord, in: proxy.size))
                     .onTapGesture {
+                        guard !gameState.isAnimating else { return }
                         _ = gameState.makeMove(at: coord)
                     }
                 }
-            }
+            // 动画期间屏蔽点击的透明层
+                            if gameState.isAnimating {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .allowsHitTesting(true)
+                                    .onTapGesture {} // 空手势消耗点击
+                            }
+                        }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }

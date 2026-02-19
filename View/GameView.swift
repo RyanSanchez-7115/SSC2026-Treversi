@@ -23,25 +23,24 @@ struct GameView: View {
                 PlayerIndicator(player: .white, count: gameState.countPieces().white)
             }
             .padding(.horizontal)
-            
-            // 棋盘区域
+            //棋盘视图
             BoardView(gameState: gameState, geometry: geometry)
-                .aspectRatio(1, contentMode: .fit)
-                .padding()
-            
-            // 控制按钮
+                          .aspectRatio(1, contentMode: .fit)
+                          .padding()
+
             HStack(spacing: 30) {
-                Button(action: { _ = gameState.undoMove() }) {
-                    Label("撤销", systemImage: "arrow.uturn.backward")
-                }
-                .disabled(gameState.moveHistory.isEmpty)
-                
-                Button(action: { gameState.restart() }) {
-                    Label("重新开始", systemImage: "arrow.counterclockwise")
-                }
-            }
-            .padding()
-        }
+              Button(action: { _ = gameState.undoMove() }) {
+                  Label("撤销", systemImage: "arrow.uturn.backward")
+              }
+              .disabled(gameState.moveHistory.isEmpty || gameState.isAnimating)
+
+              Button(action: { gameState.restart() }) {
+                  Label("重新开始", systemImage: "arrow.counterclockwise")
+              }
+              .disabled(gameState.isAnimating)
+          }
+          .padding()
+                  }
         .background(
             // 简单背景，后续可替换为动态背景
             Color(.systemBackground)

@@ -13,7 +13,10 @@ class GameState: ObservableObject {
     @Published private(set) var isGameOver: Bool = false
     /// 可用的合法落子位置（实时计算）
     @Published private(set) var legalMoves: Set<TriangleCoordinate> = []
-    
+    //动画状态
+    @Published var isAnimating = false
+        private let animationDuration: Double = 0.6  // 必须与 TriangleView 中的动画时长一致
+        private var pendingAnimationWorkItem: DispatchWorkItem?
     // MARK: - 私有属性
     /// 棋盘几何定义，用于查询邻居等
      let geometry: BoardGeometry
@@ -55,36 +58,13 @@ class GameState: ObservableObject {
     private func recalculateLegalMoves() {
         var moves = Set<TriangleCoordinate>()
         
-        //print("\n🎯 为 \(currentPlayer == .black ? "黑方 ●" : "白方 ○") 计算合法移动...")
-        
         for coord in geometry.allCoordinates where board[coord] == .empty {
             let flipped = flippedCoordinatesIfPlace(at: coord, by: currentPlayer)
             if !flipped.isEmpty {
                 moves.insert(coord)
-                
-                // 打印每个合法移动的详细信息
-//                print("  ✅ (\(coord.q), \(coord.r), \(coord.isPointingUp ? "上" : "下"))")
-//                print("     可翻转 \(flipped.count) 个棋子:")
-                for (index, flipCoord) in flipped.enumerated() {
-                    let opponent = currentPlayer.opponent
-                    let pieceSymbol = opponent == .black ? "●" : "○"
-//                    print("     \(index+1). (\(flipCoord.q), \(flipCoord.r), \(flipCoord.isPointingUp ? "上" : "下")) \(pieceSymbol)")
-                }
-            } else {
-                // 可选：打印不可落子的点（调试用，后续可以移除）
-                // print("  ❌ (\(coord.q), \(coord.r), \(coord.isPointingUp ? "上":"下")) - 无法翻转任何棋子")
             }
         }
-        
         legalMoves = moves
-        
-//        // 打印总结
-//        if moves.isEmpty {
-//            print("⚠️  没有合法移动，回合可能被跳过")
-//        } else {
-//            print("📊 总结: \(currentPlayer == .black ? "黑方" : "白方") 共有 \(moves.count) 个合法落子点")
-//        }
-//        print("---")
     }
     /// **核心算法**：模拟在给定位置落子，返回将被翻转的棋子坐标数组。
     /// 如果返回数组为空，则表示落子无效。
@@ -173,42 +153,61 @@ class GameState: ObservableObject {
         // 使用Set去除重复坐标
         return Array(Set(flipped))
     }
-    /// 执行落子操作
-    func makeMove(at coordinate: TriangleCoordinate) -> Bool {
-        // 1. 验证落子是否合法
-        guard legalMoves.contains(coordinate) else {
-            //print("非法落子位置：\(coordinate)")
-            return false
-        }
-        
-        // 2. 计算将被翻转的棋子
-        let flipped = flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
-        guard !flipped.isEmpty else {
-            //print("逻辑错误：合法落子但未翻转任何棋子")
-            return false
-        }
-        
-        // 3. 记录历史（用于撤销）
-        moveHistory.append((move: coordinate, flipped: flipped, player: currentPlayer))
-        
-        // 4. 更新棋盘：放置己方棋子并翻转对手棋子
-        board[coordinate] = currentPlayer
-        for flippedCoord in flipped {
-            board[flippedCoord] = currentPlayer
-        }
-        
-        // 5. 切换玩家
-        currentPlayer = currentPlayer.opponent
-        
-        // 6. 重新计算新玩家的合法移动
-        recalculateLegalMoves()
-        
-        // 7. 检查游戏是否结束
-        checkGameOver()
-        
-//        print("落子成功：\(coordinate)，翻转了 \(flipped.count) 个棋子")
-        return true
+    //预览
+    func previewFlipped(at coordinate: TriangleCoordinate) -> [TriangleCoordinate] {
+        return flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
     }
+    /// 执行落子操作
+    // 修改 makeMove 方法
+        func makeMove(at coordinate: TriangleCoordinate) -> Bool {
+            guard legalMoves.contains(coordinate) else {
+                print("非法落子位置：\(coordinate)")
+                return false
+            }
+
+            let flipped = flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
+            guard !flipped.isEmpty else {
+                print("逻辑错误：合法落子但未翻转任何棋子")
+                return false
+            }
+
+            // 记录历史（用于撤销）
+            moveHistory.append((move: coordinate, flipped: flipped, player: currentPlayer))
+
+            // 更新棋盘：放置己方棋子并翻转对手棋子
+            board[coordinate] = currentPlayer
+            for flippedCoord in flipped {
+                board[flippedCoord] = currentPlayer
+            }
+
+            // 取消之前的延迟任务（防止多次点击）
+            pendingAnimationWorkItem?.cancel()
+
+            // 创建新的延迟任务
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                // 切换玩家
+                self.currentPlayer = self.currentPlayer.opponent
+                // 重新计算合法移动
+                self.recalculateLegalMoves()
+                // 检查游戏结束
+                self.checkGameOver()
+                // 动画结束
+                self.isAnimating = false
+                self.pendingAnimationWorkItem = nil
+            }
+            pendingAnimationWorkItem = workItem
+
+            // 设置动画状态
+            isAnimating = true
+
+            // 延迟执行
+            DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration, execute: workItem)
+
+            //print("落子成功：\(coordinate)，翻转了 \(flipped.count) 个棋子")
+            return true
+        }
+
     
     /// 检查游戏是否应结束（双方都无合法移动时）
     private func checkGameOver() {
@@ -271,6 +270,9 @@ class GameState: ObservableObject {
     func undoMove() -> Bool {
         guard let lastMove = moveHistory.popLast() else {
             print("没有可以撤销的步骤")
+            return false
+        }
+        guard !isAnimating else {
             return false
         }
         
