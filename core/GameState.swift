@@ -153,10 +153,7 @@ class GameState: ObservableObject {
         // 使用Set去除重复坐标
         return Array(Set(flipped))
     }
-    //预览
-    func previewFlipped(at coordinate: TriangleCoordinate) -> [TriangleCoordinate] {
-        return flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
-    }
+   
     /// 执行落子操作
     // 修改 makeMove 方法
         func makeMove(at coordinate: TriangleCoordinate) -> Bool {
@@ -315,5 +312,9 @@ class GameState: ObservableObject {
         recalculateLegalMoves()
         
         print("游戏已重新开始")
+    }
+    //预览
+    func previewFlipped(at coordinate: TriangleCoordinate) -> [TriangleCoordinate] {
+        return flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
     }
 }

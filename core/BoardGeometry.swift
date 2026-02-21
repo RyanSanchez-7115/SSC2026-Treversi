@@ -44,17 +44,16 @@ enum BoardType: String, CaseIterable, Identifiable {
     
     var id: String { self.rawValue }
     
-    // 根据枚举创建具体的棋盘实例
-    var geometry: any BoardGeometry {
+    // 根据枚举创建具体的棋盘实例（带半径）
+    func geometry(radius: Int) -> any BoardGeometry {
         switch self {
         case .hexagon:
-            return HexagonBoard(radius: 3) // 默认半径为3，可以根据需要调整
+            return HexagonBoard(radius: radius)
         case .diamond:
-            // 先返回一个临时的六边形，等实现了DiamondBoard再替换
-            return HexagonBoard(radius: 3)
+            // 暂时返回六边形占位，等实现了再替换
+            return HexagonBoard(radius: radius)
         case .irregular:
-            // 先返回一个临时的六边形，等实现了IrregularBoard再替换
-            return HexagonBoard(radius: 3)
+            return HexagonBoard(radius: radius)
         }
     }
     
@@ -64,6 +63,30 @@ enum BoardType: String, CaseIterable, Identifiable {
         case .hexagon: return "经典六边形"
         case .diamond: return "菱形战场"
         case .irregular: return "异形领域"
+        }
+    }
+    
+    // 获取该类型可用的布局名称列表（临时只对六边形有效）
+    var layoutNames: [String] {
+        switch self {
+        case .hexagon:
+            return HexagonBoard.layoutNames
+        case .diamond, .irregular:
+            return ["默认布局"]  // 占位，后续可扩展
+        }
+    }
+    
+    // 获取指定索引的布局字典
+    func getLayout(at index: Int) -> [TriangleCoordinate: Player] {
+        switch self {
+        case .hexagon:
+            return HexagonBoard.layouts[index]
+        case .diamond:
+            return HexagonBoard.layouts[index]
+            // 返回空布局，实际使用时应使用该棋盘的默认布局
+        case .irregular:
+            return HexagonBoard.layouts[index]
+            // 返回空布局，实际使用时应使用该棋盘的默认布局
         }
     }
 }

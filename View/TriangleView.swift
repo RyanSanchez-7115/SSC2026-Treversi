@@ -40,12 +40,12 @@ struct TriangleShape: Shape {
 
 
 // 三角形视图
-import SwiftUI
-
 struct TriangleView: View {
     let coordinate: TriangleCoordinate
     let player: Player
     let isLegalMove: Bool
+    let isPreview: Bool          // 是否是当前预览的落子点
+    let isPreviewFlipped: Bool   // 是否会被翻转
     let isHovered: Bool
     let side: CGFloat
     
@@ -56,10 +56,12 @@ struct TriangleView: View {
     // 目标颜色（即将变成的颜色）
     @State private var targetPlayer: Player
     
-    init(coordinate: TriangleCoordinate, player: Player, isLegalMove: Bool, isHovered: Bool, side: CGFloat) {
+    init(coordinate: TriangleCoordinate, player: Player, isLegalMove: Bool, isPreview: Bool, isPreviewFlipped: Bool, isHovered: Bool, side: CGFloat) {
         self.coordinate = coordinate
         self.player = player
         self.isLegalMove = isLegalMove
+        self.isPreview = isPreview
+        self.isPreviewFlipped = isPreviewFlipped
         self.isHovered = isHovered
         self.side = side
         _originalPlayer = State(initialValue: player)
@@ -73,21 +75,21 @@ struct TriangleView: View {
     
     var body: some View {
         TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
-            .fill(fillColor(for: currentPlayer))
+            .fill(fillColor)
             .overlay(
                 TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
                     .stroke(borderColor, lineWidth: 2)
             )
             .frame(width: side, height: side * sqrt(3)/2)
+            .animation(.easeOut(duration: 0.2), value: fillColor)
+            .scaleEffect(isPreview ? 0.85 : 1.0)  // 按压缩小
+               .animation(.easeOut(duration: 0.15), value: isPreviewFlipped)  // 平滑过渡
             .rotation3DEffect(
                 .degrees(rotationAngle),
                 axis: (x: 0, y: 1, z: 0),  // 绕X轴旋转（水平轴），可改为Y轴实现垂直翻面
                 perspective: 0.3
             )
             .onChange(of: player) { newPlayer in
-                // 仅当棋子确实发生变化时触发动画
-                guard newPlayer != originalPlayer else { return }
-                targetPlayer = newPlayer
                 // 开始旋转动画
                 withAnimation(.easeInOut(duration: 0.6)) {
                     rotationAngle = 180
@@ -106,25 +108,30 @@ struct TriangleView: View {
             }
     }
     
-    private func fillColor(for player: Player) -> Color {
-        if isHovered {
-            return Color.yellow.opacity(0.6)
+    private var fillColor: Color {
+            if isPreview {
+                return Color.orange.opacity(0.5)
+            } else if isPreviewFlipped {
+                return Color.yellow.opacity(0.5)
+            } else if isHovered {
+                return Color.yellow.opacity(0.6)
+            } else {
+                switch player {
+                case .black:
+                    return .black
+                case .white:
+                    return .white
+                case .empty:
+                    return isLegalMove ? Color.green.opacity(0.3) : Color.black.opacity(0.2)
+                }
+            }
         }
-        switch player {
-        case .black:
-            return .black
-        case .white:
-            return .white
-        case .empty:
-            return isLegalMove ? Color.green.opacity(0.3) : Color.black.opacity(0.2)
+
+        private var borderColor: Color {
+            if isLegalMove && player == .empty && !isPreview && !isPreviewFlipped {
+                return .green
+            } else {
+                return .gray.opacity(0.3)
+            }
         }
     }
-    
-    private var borderColor: Color {
-        if isLegalMove && player == .empty {
-            return .green
-        } else {
-            return .gray.opacity(0.3)
-        }
-    }
-}

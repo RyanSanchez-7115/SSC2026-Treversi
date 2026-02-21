@@ -1,51 +1,144 @@
 import SwiftUI
 
 struct BoardView: View {
-    // 游戏状态（驱动UI更新）
     @ObservedObject var gameState: GameState
-    // 棋盘几何信息（提供所有坐标）
     let geometry: BoardGeometry
-    // 三角形边长（可根据需要调整，或作为参数传入）
     let side: CGFloat = 100
-    // 新增：三角形之间的间距
     let spacing: CGFloat = 7.0
-    //实际的三角形棋子的边长
-    var realside: CGFloat {side - spacing}
-    // 用于悬停预览的状态
+    var realside: CGFloat { side - spacing }
+    
+    // 新增：功能开关
+    let showLegalMoves: Bool
+    let showPreview: Bool
+    
     @State private var previewCoord: TriangleCoordinate?
-    @State private var previewFlippedCoords: Set<TriangleCoordinate> = []
+    @State private var previewFlipped: Set<TriangleCoordinate> = []
     
     var body: some View {
         GeometryReader { proxy in
             ZStack {
                 ForEach(Array(geometry.allCoordinates), id: \.self) { coord in
-                    let isLegal = !gameState.isAnimating && gameState.legalMoves.contains(coord)
                     TriangleView(
                         coordinate: coord,
                         player: gameState.board[coord] ?? .empty,
-                        isLegalMove:  isLegal,
-                        isHovered: false, // for apple pencil hover, currently not used
+                        isLegalMove: showLegalMoves && !gameState.isAnimating && gameState.legalMoves.contains(coord),
+                        isPreview: (coord == previewCoord),
+                        isPreviewFlipped: previewFlipped.contains(coord),
+                        isHovered: false,
                         side: realside
                     )
                     .position(position(for: coord, in: proxy.size))
-                    .onTapGesture {
-                        guard !gameState.isAnimating else { return }
-                        _ = gameState.makeMove(at: coord)
+                }
+
+                // 手势层：仅在游戏未动画时添加
+                if !gameState.isAnimating {
+                    if showPreview {
+                        // 预览模式：使用拖动手势处理预览和落子
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        handleDragChanged(value, in: proxy)
+                                    }
+                                    .onEnded { value in
+                                        handleDragEnded(value, in: proxy)
+                                    }
+                            )
+                    } else {
+                        // 非预览模式：使用简单点击层，直接落子
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onEnded { value in
+                                        let location = value.location
+                                        guard let coord = findCoordinate(at: location, in: proxy.size) else { return }
+                                        if gameState.legalMoves.contains(coord) {
+                                            _ = gameState.makeMove(at: coord)
+                                        }
+                                    }
+                            )
                     }
                 }
-            // 动画期间屏蔽点击的透明层
-                            if gameState.isAnimating {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .allowsHitTesting(true)
-                                    .onTapGesture {} // 空手势消耗点击
-                            }
-                        }
+            }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
+    // MARK: - 手势处理
+    private func handleDragChanged(_ value: DragGesture.Value, in proxy: GeometryProxy) {
+        guard !gameState.isAnimating else { return }
+        
+        let location = value.location
+        guard let coord = findCoordinate(at: location, in: proxy.size) else {
+            if previewCoord != nil {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    clearPreview()
+                }
+            }
+            return
+        }
+        
+        if previewCoord == nil {
+            // 进入新的预览点
+            if gameState.legalMoves.contains(coord) {
+                let flipped = gameState.previewFlipped(at: coord)
+                withAnimation(.easeOut(duration: 0.2)) {
+                    previewCoord = coord
+                    previewFlipped = Set(flipped)
+                }
+            }
+        } else if coord != previewCoord {
+            // 移出当前预览点
+            withAnimation(.easeOut(duration: 0.2)) {
+                clearPreview()
+            }
+        }
+    }
     
-    // 根据新的定位算法计算每个三角形的中心在视图中的位置
+    private func handleDragEnded(_ value: DragGesture.Value, in proxy: GeometryProxy) {
+        guard !gameState.isAnimating else {
+            withAnimation(.easeOut(duration: 0.2)) {
+                clearPreview()
+            }
+            return
+        }
+        
+        let location = value.location
+        if let coord = findCoordinate(at: location, in: proxy.size),
+           coord == previewCoord,
+           gameState.legalMoves.contains(coord) {
+            _ = gameState.makeMove(at: coord)
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            clearPreview()
+        }
+    }
+    private func clearPreview() {
+        previewCoord = nil
+        previewFlipped.removeAll()
+    }
+    
+    // MARK: - 坐标查找
+    private func findCoordinate(at location: CGPoint, in size: CGSize) -> TriangleCoordinate? {
+        let threshold = side / 2  // 可调整
+        var bestCoord: TriangleCoordinate?
+        var bestDistance: CGFloat = .infinity
+        
+        for coord in geometry.allCoordinates {
+            let center = position(for: coord, in: size)
+            let distance = hypot(location.x - center.x, location.y - center.y)
+            if distance < threshold && distance < bestDistance {
+                bestDistance = distance
+                bestCoord = coord
+            }
+        }
+        return bestCoord
+    }
+    
+    // MARK: - 坐标转位置
     private func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
         // 1. 基础几何常数
         let height = side * sqrt(2.8) / 2        // 三角形的高

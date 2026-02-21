@@ -6,38 +6,6 @@ struct HexagonBoard: BoardGeometry {
     var displayName: String { "经典六边形" }
     var description: String { "三角密铺的古老契约。" }
     
-    // 一个预先计算好的、保证正确的坐标集合（对应radius=2的24个三角形）
-//    var allCoordinates: Set<TriangleCoordinate> {
-//        return [
-//            //第一圈层
-//            TriangleCoordinate(q: 0, r: 0, isPointingUp: false),
-//            TriangleCoordinate(q: 1, r: -1, isPointingUp: false),
-//            TriangleCoordinate(q: -1, r: -1, isPointingUp: false),
-//            TriangleCoordinate(q: 1, r: 0, isPointingUp: true),
-//            TriangleCoordinate(q: -1, r: 0, isPointingUp: true),
-//            TriangleCoordinate(q: 0, r: -1, isPointingUp: true),
-//            //第二圈层
-//            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
-//            TriangleCoordinate(q: 1, r: 1, isPointingUp: false), 
-//            TriangleCoordinate(q: -2, r: 0, isPointingUp: false),
-//            TriangleCoordinate(q: 2, r: 0, isPointingUp: false),
-//            TriangleCoordinate(q: -1, r: 1, isPointingUp: false),
-//            TriangleCoordinate(q: -3, r: -1, isPointingUp: false),
-//            TriangleCoordinate(q: 3, r: -1, isPointingUp: false),
-//            TriangleCoordinate(q: -2, r: -2, isPointingUp: false),
-//            TriangleCoordinate(q: 0, r: -2, isPointingUp: false),
-//            TriangleCoordinate(q: 2, r: -2, isPointingUp: false),
-//            TriangleCoordinate(q: -2, r: 1, isPointingUp: true),
-//            TriangleCoordinate(q: 0, r: 1, isPointingUp: true),
-//            TriangleCoordinate(q: 2, r: 1, isPointingUp: true),
-//            TriangleCoordinate(q: -3, r: 0, isPointingUp: true),
-//            TriangleCoordinate(q: 3, r: 0, isPointingUp: true),
-//            TriangleCoordinate(q: -2, r: -1, isPointingUp: true),
-//            TriangleCoordinate(q: 2, r: -1, isPointingUp: true),
-//            TriangleCoordinate(q: -1, r: -2, isPointingUp: true),
-//            TriangleCoordinate(q: 1, r: -2, isPointingUp: true),
-//        ]
-//    }
     var allCoordinates: Set<TriangleCoordinate> {
         var coords = Set<TriangleCoordinate>()
         for r in 0...(radius - 1){
@@ -126,4 +94,39 @@ extension HexagonBoard {
         }
         print("========================================\n")
     }
+}
+extension HexagonBoard {
+    // 预定义的布局数组
+    static let layouts: [[TriangleCoordinate: Player]] = [
+        // 布局0：经典开局（你之前设计的6个棋子）
+        [
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+        ],
+        // 布局1：对称布局（示例，可自行调整）
+        [
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+        ],
+        // 布局2：激进布局（可自行设计）
+        [
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+        ]
+    ]
+    
+    static let layoutNames: [String] = ["经典", "对称", "激进"]
 }
