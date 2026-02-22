@@ -10,16 +10,6 @@ struct SettingView: View {
     @State private var detail: DetailView = .welcome
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     
-    // 根据棋盘类型获取布局名称列表
-    private var layoutNames: [String] {
-        switch config.boardType {
-        case .hexagon:
-            return HexagonBoard.layoutNames
-        case .diamond, .irregular:
-            return ["默认"] // 临时，后续完善
-        }
-    }
-    
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             // 侧边栏：设置选项
@@ -37,6 +27,8 @@ struct SettingView: View {
                 }
                 
                 Section("初始布局") {
+                    // 使用 BoardType 的 layoutNames 获取名称列表
+                    let layoutNames = config.boardType.layoutNames
                     Picker("布局", selection: $config.layoutIndex) {
                         ForEach(0..<layoutNames.count, id: \.self) { index in
                             Text(layoutNames[index]).tag(index)
@@ -59,11 +51,27 @@ struct SettingView: View {
             }
             .navigationTitle("游戏设置")
         } detail: {
-                GameView(config: config, onBack: {
+            // 根据 detail 值展示不同视图
+            switch detail {
+            case .welcome:
+                VStack {
+                    Image(systemName: "triangle.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.accentColor)
+                        .padding()
+                    Text("选择设置后开始游戏")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground))
+            case .game(let gameConfig):
+                GameView(config: gameConfig, onBack: {
                     withAnimation {
                         detail = .welcome
                     }
                 })
+            }
         }
         .navigationSplitViewStyle(.balanced)
     }

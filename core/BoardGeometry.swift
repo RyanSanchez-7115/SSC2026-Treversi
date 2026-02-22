@@ -66,13 +66,13 @@ enum BoardType: String, CaseIterable, Identifiable {
         }
     }
     
-    // 获取该类型可用的布局名称列表（临时只对六边形有效）
+    // 获取该类型可用的布局名称列表
     var layoutNames: [String] {
         switch self {
         case .hexagon:
             return HexagonBoard.layoutNames
         case .diamond, .irregular:
-            return ["默认布局"]  // 占位，后续可扩展
+            return ["默认"]  // 占位，后续可扩展
         }
     }
     
@@ -80,13 +80,11 @@ enum BoardType: String, CaseIterable, Identifiable {
     func getLayout(at index: Int) -> [TriangleCoordinate: Player] {
         switch self {
         case .hexagon:
+            guard index < HexagonBoard.layouts.count else { return [:] }
             return HexagonBoard.layouts[index]
-        case .diamond:
-            return HexagonBoard.layouts[index]
-            // 返回空布局，实际使用时应使用该棋盘的默认布局
-        case .irregular:
-            return HexagonBoard.layouts[index]
-            // 返回空布局，实际使用时应使用该棋盘的默认布局
+        case .diamond, .irregular:
+            // 目前占位返回空，等实现后替换
+            return [:]
         }
     }
 }

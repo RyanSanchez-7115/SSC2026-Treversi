@@ -22,35 +22,33 @@ class GameState: ObservableObject {
      let geometry: BoardGeometry
     /// 历史记录，用于实现撤销功能
     var moveHistory: [(move: TriangleCoordinate, flipped: [TriangleCoordinate], player: Player)] = []
-    
+    // 新增：保存用户选择的初始布局
+        private let selectedLayout: [TriangleCoordinate: Player]
+
     // MARK: - 初始化
     /// 使用指定的棋盘几何和初始布局创建游戏状态
-    init(geometry: BoardGeometry, initialOccupation: [TriangleCoordinate: Player]? = nil) {
-        self.geometry = geometry
-        // 初始化棋盘：所有位置默认为空
-        var initialBoard: [TriangleCoordinate: Player] = [:]
-        for coord in geometry.allCoordinates {
-            initialBoard[coord] = .empty
-        }
-        // 应用自定义初始布局，或使用几何体提供的默认布局
-        let layoutToApply = initialOccupation ?? geometry.initialOccupation
-        for (coord, player) in layoutToApply {
-            // 确保坐标在棋盘内df
-            if geometry.allCoordinates.contains(coord) {
-                initialBoard[coord] = player
+        init(geometry: BoardGeometry, initialOccupation: [TriangleCoordinate: Player]? = nil) {
+            self.geometry = geometry
+            // 保存用户选择的布局（如果没有提供，则使用 geometry.initialOccupation）
+            self.selectedLayout = initialOccupation ?? geometry.initialOccupation
+
+            // 初始化棋盘：所有位置默认为空
+            var initialBoard: [TriangleCoordinate: Player] = [:]
+            for coord in geometry.allCoordinates {
+                initialBoard[coord] = .empty
             }
+            // 应用保存的用户布局
+            for (coord, player) in selectedLayout {
+                if geometry.allCoordinates.contains(coord) {
+                    initialBoard[coord] = player
+                }
+            }
+            self.board = initialBoard
+
+            self.currentPlayer = .black
+            self.recalculateLegalMoves()
+            self.checkGameOver()
         }
-        self.board = initialBoard
-        
-        // 默认由黑方开始（可根据规则调整）
-        self.currentPlayer = .black
-        
-        // 计算初始合法移动
-        self.recalculateLegalMoves()
-        
-        // 检查初始状态是否可能已结束
-        self.checkGameOver()
-    }
     
     // MARK: - 核心游戏逻辑
     
@@ -293,26 +291,26 @@ class GameState: ObservableObject {
     }
     
     /// 重新开始游戏
-    func restart() {
-        // 重新初始化棋盘
-        var newBoard: [TriangleCoordinate: Player] = [:]
-        for coord in geometry.allCoordinates {
-            newBoard[coord] = .empty
-        }
-        for (coord, player) in geometry.initialOccupation {
-            if geometry.allCoordinates.contains(coord) {
-                newBoard[coord] = player
+        func restart() {
+            var newBoard: [TriangleCoordinate: Player] = [:]
+            for coord in geometry.allCoordinates {
+                newBoard[coord] = .empty
             }
+            // 使用保存的用户布局
+            for (coord, player) in selectedLayout {
+                if geometry.allCoordinates.contains(coord) {
+                    newBoard[coord] = player
+                }
+            }
+
+            board = newBoard
+            currentPlayer = .black
+            moveHistory.removeAll()
+            isGameOver = false
+            recalculateLegalMoves()
+
+            print("游戏已重新开始（使用用户选择的布局）")
         }
-        
-        board = newBoard
-        currentPlayer = .black
-        moveHistory.removeAll()
-        isGameOver = false
-        recalculateLegalMoves()
-        
-        print("游戏已重新开始")
-    }
     //预览
     func previewFlipped(at coordinate: TriangleCoordinate) -> [TriangleCoordinate] {
         return flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)

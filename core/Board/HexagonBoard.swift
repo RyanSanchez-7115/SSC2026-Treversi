@@ -57,44 +57,8 @@ struct HexagonBoard: BoardGeometry {
         
         return occupation
     }
-    
-    // 初始化器简化
-    init(radius: Int) {
-        self.radius = radius
-    }
 }
 
-extension HexagonBoard {
-    func testGeneration(radius: Int) {
-        let board = HexagonBoard(radius: radius)
-        let coords = board.allCoordinates
-        
-        print("\n========== 测试半径 \(radius) 的棋盘生成 ==========")
-        print("总三角形数：\(coords.count)")
-        
-        // 按 r 坐标分组
-        var groupedByR: [Int: [TriangleCoordinate]] = [:]
-        for coord in coords {
-            groupedByR[coord.r, default: []].append(coord)
-        }
-        
-        // 按 r 值排序输出
-        for r in groupedByR.keys.sorted() {
-            let rCoords = groupedByR[r]!
-            print("r = \(r): \(rCoords.count) 个三角形")
-            // 如果需要查看具体坐标，可取消下一行注释
-            print(rCoords.map { "(\($0.q),\($0.r),\($0.isPointingUp ? "上":"下"))" }.joined(separator: ", "))
-        }
-        
-        let expected = 6 * radius * radius
-        if coords.count == expected {
-            print("✅ 数量正确：\(coords.count) = \(expected)")
-        } else {
-            print("❌ 数量错误：应有 \(expected)，实际 \(coords.count)")
-        }
-        print("========================================\n")
-    }
-}
 extension HexagonBoard {
     // 预定义的布局数组
     static let layouts: [[TriangleCoordinate: Player]] = [
@@ -107,42 +71,26 @@ extension HexagonBoard {
             TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
         ],
-        // 布局1：对称布局（示例，可自行调整）
+        // 布局1：非对称布局
         [
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+           
+            //TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
             TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .black,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+            
         ],
         // 布局2：激进布局（可自行设计）
         [
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .white,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
+  
         ]
     ]
     
     static let layoutNames: [String] = ["经典", "对称", "激进"]
 }
-var allCoordinates: Set<TriangleCoordinate> {
-    var coords = Set<TriangleCoordinate>()
-    for r in 0...2{
-        for q in -(25 - r)...(25 - r) {
-            let s = -q - r
-            coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
-            }
-        }
-    for r in (-3)...(-1){
-        for q in -(25 + r)...(25 + r) {
-            let s = -q - r
-            coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
-        }
-    }
-    return coords
-    }
+

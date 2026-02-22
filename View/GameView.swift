@@ -21,17 +21,7 @@ struct GameView: View {
         }
         
         // 获取对应布局
-        let layout: [TriangleCoordinate: Player]
-        switch config.boardType {
-        case .hexagon:
-            if config.layoutIndex < HexagonBoard.layouts.count {
-                layout = HexagonBoard.layouts[config.layoutIndex]
-            } else {
-                layout = [:]
-            }
-        default:
-            layout = [:]
-        }
+        let layout = config.boardType.getLayout(at: config.layoutIndex)
         
         _gameState = StateObject(wrappedValue: GameState(geometry: geometry, initialOccupation: layout))
     }
