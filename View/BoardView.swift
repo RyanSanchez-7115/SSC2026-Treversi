@@ -6,13 +6,16 @@ struct BoardView: View {
     let side: CGFloat = 100
     let spacing: CGFloat = 7.0
     var realside: CGFloat { side - spacing }
-    
-    // 新增：功能开关
     let showLegalMoves: Bool
     let showPreview: Bool
+    var isEnabled: Bool = true
     
     @State private var previewCoord: TriangleCoordinate?
     @State private var previewFlipped: Set<TriangleCoordinate> = []
+    
+    // MARK: - 交互状态
+    @State private var isPreviewActive: Bool = false
+    @State private var longPressTask: Task<Void, Never>? = nil // 用于检测长按的任务
     
     var body: some View {
         GeometryReader { proxy in
@@ -29,25 +32,24 @@ struct BoardView: View {
                     )
                     .position(position(for: coord, in: proxy.size))
                 }
-
-                // 手势层：仅在游戏未动画时添加
-                if !gameState.isAnimating {
+                
+                // 手势层
+                if isEnabled && !gameState.isAnimating {
                     if showPreview {
-                        // 预览模式：使用拖动手势处理预览和落子
                         Color.clear
                             .contentShape(Rectangle())
                             .frame(width: proxy.size.width, height: proxy.size.height)
                             .gesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { value in
-                                        handleDragChanged(value, in: proxy)
+                                        handleTouchDownOrMove(value, in: proxy)
                                     }
                                     .onEnded { value in
-                                        handleDragEnded(value, in: proxy)
+                                        handleTouchUp(value, in: proxy)
                                     }
                             )
                     } else {
-                        // 非预览模式：使用简单点击层，直接落子
+                        // 非预览模式：直接落子
                         Color.clear
                             .contentShape(Rectangle())
                             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -67,12 +69,39 @@ struct BoardView: View {
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
-    // MARK: - 手势处理
-    private func handleDragChanged(_ value: DragGesture.Value, in proxy: GeometryProxy) {
+    
+    // MARK: - 手势处理逻辑
+    
+    func handleTouchDownOrMove(_ value: DragGesture.Value, in proxy: GeometryProxy) {
         guard !gameState.isAnimating else { return }
-        
         let location = value.location
+
+        // 1. 如果这是新的触摸（还没有任务），启动长按检测任务
+        if longPressTask == nil && !isPreviewActive {
+            longPressTask = Task {
+                // 等待 0.3 秒
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+                
+                // 如果任务没有被取消（手指没松开），则激活预览
+                if !Task.isCancelled {
+                    await MainActor.run {
+                        // 激活预览模式，并显示当前位置的预览
+                        isPreviewActive = true
+                        updatePreview(at: location, in: proxy)
+                    }
+                }
+            }
+        }
+        
+        // 2. 如果预览已经激活（无论是刚激活还是正在拖动），实时更新显示
+        if isPreviewActive {
+            updatePreview(at: location, in: proxy)
+        }
+    }
+    
+    func updatePreview(at location: CGPoint, in proxy: GeometryProxy) {
         guard let coord = findCoordinate(at: location, in: proxy.size) else {
+            // 移出了有效区域
             if previewCoord != nil {
                 withAnimation(.easeOut(duration: 0.2)) {
                     clearPreview()
@@ -81,49 +110,64 @@ struct BoardView: View {
             return
         }
         
-        if previewCoord == nil {
-            // 进入新的预览点
+        if previewCoord != coord {
+            // 只有当移到新格子，且是合法步时才更新
             if gameState.legalMoves.contains(coord) {
                 let flipped = gameState.previewFlipped(at: coord)
                 withAnimation(.easeOut(duration: 0.2)) {
                     previewCoord = coord
                     previewFlipped = Set(flipped)
                 }
-            }
-        } else if coord != previewCoord {
-            // 移出当前预览点
-            withAnimation(.easeOut(duration: 0.2)) {
-                clearPreview()
+            } else {
+                // 移到了不合法格子
+                withAnimation(.easeOut(duration: 0.2)) {
+                    clearPreview()
+                }
             }
         }
     }
     
-    private func handleDragEnded(_ value: DragGesture.Value, in proxy: GeometryProxy) {
+    func handleTouchUp(_ value: DragGesture.Value, in proxy: GeometryProxy) {
+        // 1. 取消正在进行的长按检测（如果是短按，任务会被这里取消，从而不会触发 isPreviewActive = true）
+        longPressTask?.cancel()
+        longPressTask = nil
+        
+        let wasPreviewActive = isPreviewActive
+        
+        // 重置状态
+        isPreviewActive = false
+        
         guard !gameState.isAnimating else {
-            withAnimation(.easeOut(duration: 0.2)) {
-                clearPreview()
-            }
+            withAnimation(.easeOut(duration: 0.2)) { clearPreview() }
             return
         }
         
         let location = value.location
-        if let coord = findCoordinate(at: location, in: proxy.size),
-           coord == previewCoord,
-           gameState.legalMoves.contains(coord) {
-            _ = gameState.makeMove(at: coord)
+        guard let coord = findCoordinate(at: location, in: proxy.size),
+              gameState.legalMoves.contains(coord) else {
+            // 在无效位置松手
+            withAnimation(.easeOut(duration: 0.2)) { clearPreview() }
+            return
         }
+        
+        // 逻辑：
+        // A. 如果是短按（wasPreviewActive == false），直接落子。
+        // B. 如果是长按预览后松手（wasPreviewActive == true），通常也意味着确认落子。
+        _ = gameState.makeMove(at: coord)
+        
         withAnimation(.easeOut(duration: 0.2)) {
             clearPreview()
         }
     }
-    private func clearPreview() {
+    
+    func clearPreview() {
         previewCoord = nil
         previewFlipped.removeAll()
     }
     
-    // MARK: - 坐标查找
-    private func findCoordinate(at location: CGPoint, in size: CGSize) -> TriangleCoordinate? {
-        let threshold = side / 2  // 可调整
+    // MARK: - 坐标查找 (保持不变)
+    func findCoordinate(at location: CGPoint, in size: CGSize) -> TriangleCoordinate? {
+        let threshold = side / 2
         var bestCoord: TriangleCoordinate?
         var bestDistance: CGFloat = .infinity
         
@@ -138,27 +182,16 @@ struct BoardView: View {
         return bestCoord
     }
     
-    // MARK: - 坐标转位置
-    private func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
-        // 1. 基础几何常数
-        let height = side * sqrt(2.8) / 2        // 三角形的高
-        
-        // 2. 调整间距计算
-        // 增加一个额外的水平和垂直距离来产生间距
-        let horizontalSpacing = side / 2 // 水平间距（考虑到三角形的宽度和间距）
-        let verticalSpacing = height // 垂直间距（考虑到三角形的高度和间距）
-        
-        // 3. 该三角形中心相对于 (0,0,false) 中心的偏移
+    // MARK: - 坐标转位置 (保持不变)
+    func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
+        let height = side * sqrt(2.8) / 2
+        let horizontalSpacing = side / 2
+        let verticalSpacing = height
         let centerX = horizontalSpacing * CGFloat(coord.q)
         let centerY = -verticalSpacing * CGFloat(coord.r)
-        
-        // 4. (0,0,false) 中心相对于其下顶点的偏移（朝下三角形中心在下顶点上方 height/2 处）
         let anchorOffsetY = height / 2
-        
-        // 5. 最终位置：视图中心 + 中心偏移 - 锚点偏移
         let x = size.width / 2 + centerX
         let y = size.height / 2 + centerY - anchorOffsetY
-        
         return CGPoint(x: x, y: y)
     }
 }

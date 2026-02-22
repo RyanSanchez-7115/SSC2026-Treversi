@@ -5,7 +5,7 @@ enum DetailView {
     case game(GameConfig)
 }
 
-struct StartView: View {
+struct SettingView: View {
     @State private var config = GameConfig()
     @State private var detail: DetailView = .welcome
     @State private var columnVisibility = NavigationSplitViewVisibility.all
@@ -59,31 +59,11 @@ struct StartView: View {
             }
             .navigationTitle("游戏设置")
         } detail: {
-            // 详情区：根据状态显示不同内容
-            switch detail {
-            case .welcome:
-                VStack {
-                    Image(systemName: "triangle.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.accentColor)
-                        .padding()
-                    Text("欢迎来到 Treversi")
-                        .font(.largeTitle)
-                    Text("请在左侧设置游戏参数，然后点击“开始游戏”")
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemGroupedBackground))
-                
-            case .game(let config):
                 GameView(config: config, onBack: {
                     withAnimation {
                         detail = .welcome
                     }
                 })
-            }
         }
         .navigationSplitViewStyle(.balanced)
     }

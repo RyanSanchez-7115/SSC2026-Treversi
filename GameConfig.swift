@@ -1,4 +1,3 @@
-import SwiftUI
 
 struct GameConfig {
     var boardType: BoardType = .hexagon

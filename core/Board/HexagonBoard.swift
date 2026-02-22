@@ -130,3 +130,19 @@ extension HexagonBoard {
     
     static let layoutNames: [String] = ["经典", "对称", "激进"]
 }
+var allCoordinates: Set<TriangleCoordinate> {
+    var coords = Set<TriangleCoordinate>()
+    for r in 0...2{
+        for q in -(25 - r)...(25 - r) {
+            let s = -q - r
+            coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
+            }
+        }
+    for r in (-3)...(-1){
+        for q in -(25 + r)...(25 + r) {
+            let s = -q - r
+            coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
+        }
+    }
+    return coords
+    }

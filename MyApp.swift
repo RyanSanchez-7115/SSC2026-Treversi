@@ -4,7 +4,7 @@ import SwiftUI
 struct TreversiApp: App {
     var body: some Scene {
         WindowGroup {
-            StartView()
+            MainMenuView()
         }
     }
 }

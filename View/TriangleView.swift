@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// 圆角三角形形状
+// 圆角三角形形状（保持不变）
 struct TriangleShape: Shape {
     let isPointingUp: Bool
     var cornerRadius: CGFloat
@@ -26,7 +26,6 @@ struct TriangleShape: Shape {
             p3 = CGPoint(x: rect.minX, y: rect.minY) // Top-left
         }
 
-        // 移动到第一个圆角的起始点
         path.move(to: CGPoint(x: p1.x + (p3.x - p1.x) * (cornerRadius / rect.width), y: p1.y + (p3.y - p1.y) * (cornerRadius / rect.height)))
         
         path.addArc(tangent1End: p1, tangent2End: p2, radius: cornerRadius)
@@ -38,23 +37,23 @@ struct TriangleShape: Shape {
     }
 }
 
-
 // 三角形视图
 struct TriangleView: View {
     let coordinate: TriangleCoordinate
     let player: Player
     let isLegalMove: Bool
-    let isPreview: Bool          // 是否是当前预览的落子点
-    let isPreviewFlipped: Bool   // 是否会被翻转
+    let isPreview: Bool
+    let isPreviewFlipped: Bool
     let isHovered: Bool
     let side: CGFloat
     
-    // 旋转角度（0～180）
+    // 旋转角度
     @State private var rotationAngle: Double = 0
-    // 动画开始前的原始颜色
-    @State private var originalPlayer: Player
-    // 目标颜色（即将变成的颜色）
-    @State private var targetPlayer: Player
+    // 用于显示的 Player 状态，分离数据源 player 和显示层逻辑
+    @State private var displayPlayer: Player
+    
+    // 标记是否正在执行翻转动画，防止冲突
+    @State private var isAnimating: Bool = false
     
     init(coordinate: TriangleCoordinate, player: Player, isLegalMove: Bool, isPreview: Bool, isPreviewFlipped: Bool, isHovered: Bool, side: CGFloat) {
         self.coordinate = coordinate
@@ -64,13 +63,8 @@ struct TriangleView: View {
         self.isPreviewFlipped = isPreviewFlipped
         self.isHovered = isHovered
         self.side = side
-        _originalPlayer = State(initialValue: player)
-        _targetPlayer = State(initialValue: player)
-    }
-    
-    // 根据旋转角度决定当前显示的颜色：角度≥90°时显示目标颜色，否则显示原始颜色
-    private var currentPlayer: Player {
-        rotationAngle >= 90 ? targetPlayer : originalPlayer
+        // 初始化时显示状态等于传入状态
+        _displayPlayer = State(initialValue: player)
     }
     
     var body: some View {
@@ -81,57 +75,81 @@ struct TriangleView: View {
                     .stroke(borderColor, lineWidth: 2)
             )
             .frame(width: side, height: side * sqrt(3)/2)
-            .animation(.easeOut(duration: 0.2), value: fillColor)
-            .scaleEffect(isPreview ? 0.85 : 1.0)  // 按压缩小
-               .animation(.easeOut(duration: 0.15), value: isPreviewFlipped)  // 平滑过渡
+            .scaleEffect(isPreview ? 0.85 : 1.0)
             .rotation3DEffect(
                 .degrees(rotationAngle),
-                axis: (x: 0, y: 1, z: 0),  // 绕X轴旋转（水平轴），可改为Y轴实现垂直翻面
+                axis: (x: 0, y: 1, z: 0),
                 perspective: 0.3
             )
             .onChange(of: player) { newPlayer in
-                // 开始旋转动画
-                withAnimation(.easeInOut(duration: 0.6)) {
-                    rotationAngle = 180
+                // 如果是从空变为有棋子，或者两个不同颜色的棋子切换（翻转）
+                // 且不是初始化状态，则执行动画
+                if displayPlayer != newPlayer {
+                    performFlipAnimation(to: newPlayer)
                 }
             }
-            .onChange(of: rotationAngle) { newAngle in
-                // 动画完成时（角度达到180）进行处理
-                if newAngle == 180 {
-                    // 将原始颜色更新为目标颜色，确保复位后颜色正确
-                    originalPlayer = targetPlayer
-                    // 延迟复位角度，避免视觉突兀
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        rotationAngle = 0
-                    }
+            .onAppear {
+                // 确保视图出现时与数据一致
+                if displayPlayer != player {
+                    displayPlayer = player
                 }
             }
     }
     
-    private var fillColor: Color {
-            if isPreview {
-                return Color.orange.opacity(0.5)
-            } else if isPreviewFlipped {
-                return Color.yellow.opacity(0.5)
-            } else if isHovered {
-                return Color.yellow.opacity(0.6)
-            } else {
-                switch player {
-                case .black:
-                    return .black
-                case .white:
-                    return .white
-                case .empty:
-                    return isLegalMove ? Color.green.opacity(0.3) : Color.black.opacity(0.2)
-                }
-            }
+    private func performFlipAnimation(to newPlayer: Player) {
+        guard !isAnimating else { return }
+        isAnimating = true
+        
+        let duration = 0.27 // 单程时间，稍微增加一点让动画更清晰
+        
+        // 第一阶段：翻转 90 度 (旧颜色 -> 侧面)
+        // 使用 .easeIn，开始慢，结束快，模拟用力翻起的动作
+        withAnimation(.easeIn(duration: duration)) {
+            rotationAngle = 90
         }
-
-        private var borderColor: Color {
-            if isLegalMove && player == .empty && !isPreview && !isPreviewFlipped {
-                return .green
-            } else {
-                return .gray.opacity(0.3)
+        
+        // 动画中点：切换颜色，重置角度
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            self.displayPlayer = newPlayer
+            self.rotationAngle = -90 // 瞬间切换到反面
+            
+            // 第二阶段：翻转回 0 度 (侧面 -> 新颜色)
+            // 使用 .easeOut，开始快，结束慢，模拟惯性落下的动作
+            withAnimation(.easeOut(duration: duration)) {
+                self.rotationAngle = 0
+            }
+            
+            // 动画结束清理
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                self.isAnimating = false
             }
         }
     }
+    
+    private var fillColor: Color {
+        if isPreview {
+            return Color.orange.opacity(0.5)
+        } else if isPreviewFlipped {
+            return Color.yellow.opacity(0.5)
+        } else if isHovered {
+            return Color.yellow.opacity(0.6)
+        } else {
+            switch displayPlayer {
+            case .black:
+                return .black
+            case .white:
+                return .white
+            case .empty:
+                return isLegalMove ? Color.green.opacity(0.3) : Color.black.opacity(0.2)
+            }
+        }
+    }
+
+    private var borderColor: Color {
+        if isLegalMove && displayPlayer == .empty && !isPreview && !isPreviewFlipped {
+            return .green
+        } else {
+            return .gray.opacity(0.3)
+        }
+    }
+}
