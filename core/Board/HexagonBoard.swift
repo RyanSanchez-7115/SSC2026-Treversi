@@ -93,4 +93,29 @@ extension HexagonBoard {
     
     static let layoutNames: [String] = ["经典", "对称", "激进"]
 }
-
+extension HexagonBoard {
+    /// 判断给定坐标是否在指定半径的六边形棋盘内（遵循生成算法）
+    func isCoordinate(_ coord: TriangleCoordinate, withinRadius radius: Int) -> Bool {
+        let r = coord.r
+        let q = coord.q
+        // 正半轴 r 从 0 到 radius-1
+        if r >= 0 && r < radius {
+            let minQ = -(radius * 2 - 1 - r)
+            let maxQ = radius * 2 - 1 - r
+            return q >= minQ && q <= maxQ
+        }
+        // 负半轴 r 从 -radius 到 -1
+        else if r < 0 && r >= -radius {
+            let minQ = -(radius * 2 + r)   // r 为负数，radius*2 + r 可能小于 radius*2
+            let maxQ = radius * 2 + r
+            return q >= minQ && q <= maxQ
+        }
+        return false
+    }
+}
+//数组安全扩展
+extension Array {
+    subscript(safe index: Index) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
+}

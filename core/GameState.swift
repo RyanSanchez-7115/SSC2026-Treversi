@@ -316,3 +316,74 @@ class GameState: ObservableObject {
         return flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
     }
 }
+
+extension GameState {
+    /// 静态版本：计算在指定棋盘状态下落子是否会翻转棋子
+    static func flippedCoordinatesIfPlace(at coordinate: TriangleCoordinate,
+                                           board: [TriangleCoordinate: Player],
+                                           geometry: BoardGeometry) -> [TriangleCoordinate] {
+        guard board[coordinate] == .empty else { return [] }
+        
+        var flipped: [TriangleCoordinate] = []
+        let player = Player.black // 预览中固定为黑方，因为翻转算法只关心对手关系
+        let opponent = player.opponent
+        
+        // 定义6个方向的搜索函数（与原版完全一致）
+        let directions: [(Int, Int, Bool) -> (Int, Int, Bool)] = [
+            { (q, r, isUp) in return (q-1, r, !isUp) },
+            { (q, r, isUp) in return (q+1, r, !isUp) },
+            { (q, r, isUp) in
+                if isUp { return (q-1, r, !isUp) } else { return (q, r+1, !isUp) }
+            },
+            { (q, r, isUp) in
+                if isUp { return (q, r-1, !isUp) } else { return (q-1, r, !isUp) }
+            },
+            { (q, r, isUp) in
+                if isUp { return (q+1, r, !isUp) } else { return (q, r+1, !isUp) }
+            },
+            { (q, r, isUp) in
+                if isUp { return (q, r-1, !isUp) } else { return (q+1, r, !isUp) }
+            }
+        ]
+        
+        for direction in directions {
+            var toFlip: [TriangleCoordinate] = []
+            var currentQ = coordinate.q
+            var currentR = coordinate.r
+            var currentIsUp = coordinate.isPointingUp
+            
+            while true {
+                let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
+                let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
+                guard geometry.allCoordinates.contains(nextCoord) else { break }
+                
+                let nextPlayer = board[nextCoord]
+                if nextPlayer == opponent {
+                    toFlip.append(nextCoord)
+                    currentQ = nextQ
+                    currentR = nextR
+                    currentIsUp = nextIsUp
+                } else if nextPlayer == player && !toFlip.isEmpty {
+                    flipped.append(contentsOf: toFlip)
+                    break
+                } else {
+                    break
+                }
+            }
+        }
+        return Array(Set(flipped))
+    }
+    
+    /// 静态版本：计算给定棋盘状态下的所有合法移动
+    static func legalMoves(for player: Player,
+                           board: [TriangleCoordinate: Player],
+                           geometry: BoardGeometry) -> Set<TriangleCoordinate> {
+        var moves = Set<TriangleCoordinate>()
+        for coord in geometry.allCoordinates where board[coord] == .empty {
+            if !flippedCoordinatesIfPlace(at: coord, board: board, geometry: geometry).isEmpty {
+                moves.insert(coord)
+            }
+        }
+        return moves
+    }
+}

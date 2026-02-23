@@ -131,9 +131,7 @@ struct BoardView: View {
         // 1. 取消正在进行的长按检测（如果是短按，任务会被这里取消，从而不会触发 isPreviewActive = true）
         longPressTask?.cancel()
         longPressTask = nil
-        
-        let wasPreviewActive = isPreviewActive
-        
+                
         // 重置状态
         isPreviewActive = false
         
