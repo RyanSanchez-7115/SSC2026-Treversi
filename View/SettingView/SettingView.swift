@@ -5,7 +5,7 @@ struct SettingView: View {
     @State private var config = GameConfig() // 用于最终游戏
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var showingGame = false
-    
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             // 侧边栏：设置选项
@@ -16,31 +16,38 @@ struct SettingView: View {
                             Text(type.displayName).tag(type)
                         }
                     }
-                    .onChange(of: config.boardType) { _ in
-                        // 预览只支持六边形，但保持 config 更新
+                    .onChange(of: config.boardType) { newType in
+                        previewState.boardType = newType
                     }
-                    
-                    Stepper("半径: \(previewState.radius)", value: $previewState.radius, in: 3...5)
+
+                    // 大小选择器（分段控件）
+                    Picker("大小", selection: $previewState.sizeLevel) {
+                        ForEach(SizeLevel.allCases) { level in
+                            Text(level.name).tag(level)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                
+
                 Section("初始布局") {
-                    let layoutNames = config.boardType.layoutNames
+                    let layoutNames = previewState.boardType.layoutNames
                     Picker("布局", selection: $previewState.layoutIndex) {
                         ForEach(0..<layoutNames.count, id: \.self) { index in
                             Text(layoutNames[index]).tag(index)
                         }
                     }
                 }
-                
+
                 Section("功能") {
                     Toggle("显示合法落子点", isOn: $previewState.showLegalMoves)
-                    Toggle("预览翻转效果", isOn: $config.showPreview) // 不影响预览
+                    Toggle("预览翻转效果", isOn: $config.showPreview)
                     Toggle("允许撤销", isOn: $config.enableUndo)
                 }
-                
+
                 Section {
                     Button("开始游戏") {
                         // 将预览状态同步到 config
+                        config.boardType = previewState.boardType
                         config.radius = previewState.radius
                         config.layoutIndex = previewState.layoutIndex
                         showingGame = true
@@ -55,7 +62,7 @@ struct SettingView: View {
                 PreviewBoardView(state: previewState)
                     .aspectRatio(1, contentMode: .fit)
                     .padding()
-                
+
                 Text("预览棋盘")
                     .font(.caption)
                     .foregroundColor(.secondary)

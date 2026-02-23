@@ -14,7 +14,7 @@ struct PreviewBoardView: View {
                     // 半径内：使用布局中的 player（如果没有则为 .empty）
                     // 半径外：强制设为 .empty（但通过 opacity 隐藏）
                     let player = isWithin ? (state.currentLayout[coord] ?? .empty) : .empty
-                    let isLegal = isWithin && state.showLegalMoves && player == .empty && state.legalMoves.contains(coord)
+                    let isLegal = isWithin && state.showLegalMoves && !state.isAnimating && player == .empty && state.legalMoves.contains(coord)
                     
                     TriangleView(
                         coordinate: coord,

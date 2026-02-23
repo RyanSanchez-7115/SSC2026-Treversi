@@ -70,6 +70,7 @@ struct TriangleView: View {
     var body: some View {
         TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
             .fill(fillColor)
+            .animation(.easeInOut(duration: 0.2), value: isLegalMove)
             .overlay(
                 TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
                     .stroke(borderColor, lineWidth: 2)
@@ -140,7 +141,7 @@ struct TriangleView: View {
             case .white:
                 return .white
             case .empty:
-                return isLegalMove ? Color.green.opacity(0.3) : Color.black.opacity(0.2)
+                return isLegalMove ? Color.green.opacity(0.3) : Color(.systemGray3)
             }
         }
     }

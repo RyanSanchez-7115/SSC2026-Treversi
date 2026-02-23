@@ -15,9 +15,9 @@ struct GameView: View {
         case .hexagon:
             geometry = HexagonBoard(radius: config.radius)
         case .diamond:
-            geometry = HexagonBoard(radius: 3) // 占位
-        case .irregular:
-            geometry = HexagonBoard(radius: 3) // 占位
+            geometry = DiamondBoard(radius: config.radius)
+        case .triangle:
+            geometry = TriangleBoard(radius: config.radius)
         }
         
         // 获取对应布局
@@ -28,17 +28,6 @@ struct GameView: View {
     
     var body: some View {
         VStack {
-            // 顶部信息栏
-            HStack {
-                PlayerIndicator(player: .black, count: gameState.countPieces().black)
-                Spacer()
-                Text("当前回合")
-                    .font(.headline)
-                Spacer()
-                PlayerIndicator(player: .white, count: gameState.countPieces().white)
-            }
-            .padding(.horizontal)
-            
             // 棋盘视图（传递配置中的开关）
             BoardView(
                 gameState: gameState,

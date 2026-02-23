@@ -40,7 +40,7 @@ extension BoardGeometry {
 enum BoardType: String, CaseIterable, Identifiable {
     case hexagon
     case diamond
-    case irregular
+    case triangle
     
     var id: String { self.rawValue }
     
@@ -50,10 +50,9 @@ enum BoardType: String, CaseIterable, Identifiable {
         case .hexagon:
             return HexagonBoard(radius: radius)
         case .diamond:
-            // 暂时返回六边形占位，等实现了再替换
-            return HexagonBoard(radius: radius)
-        case .irregular:
-            return HexagonBoard(radius: radius)
+            return DiamondBoard(radius: radius)
+        case .triangle:
+            return TriangleBoard(radius: radius)
         }
     }
     
@@ -62,7 +61,7 @@ enum BoardType: String, CaseIterable, Identifiable {
         switch self {
         case .hexagon: return "经典六边形"
         case .diamond: return "菱形战场"
-        case .irregular: return "异形领域"
+        case .triangle: return "异形领域"
         }
     }
     
@@ -71,8 +70,10 @@ enum BoardType: String, CaseIterable, Identifiable {
         switch self {
         case .hexagon:
             return HexagonBoard.layoutNames
-        case .diamond, .irregular:
-            return ["默认"]  // 占位，后续可扩展
+        case .diamond:
+            return DiamondBoard.layoutNames
+        case .triangle:
+            return TriangleBoard.layoutNames
         }
     }
     
@@ -82,9 +83,13 @@ enum BoardType: String, CaseIterable, Identifiable {
         case .hexagon:
             guard index < HexagonBoard.layouts.count else { return [:] }
             return HexagonBoard.layouts[index]
-        case .diamond, .irregular:
-            // 目前占位返回空，等实现后替换
-            return [:]
+        case .diamond:
+            guard index < DiamondBoard.layouts.count else { return [:] }
+            return DiamondBoard.layouts[safe: index] ?? [:]
+        case.triangle:
+            guard index < TriangleBoard.layouts.count else { return [:] }
+            return TriangleBoard.layouts[safe: index] ?? [:]
         }
     }
 }
+
