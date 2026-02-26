@@ -3,7 +3,7 @@ import SwiftUI
 struct BoardView: View {
     @ObservedObject var gameState: GameState
     let geometry: BoardGeometry
-    let side: CGFloat = 100
+    let side: CGFloat = 85
     let spacing: CGFloat = 7.0
     var realside: CGFloat { side - spacing }
     let showLegalMoves: Bool
@@ -128,7 +128,7 @@ struct BoardView: View {
     }
     
     func handleTouchUp(_ value: DragGesture.Value, in proxy: GeometryProxy) {
-        // 1. 取消正在进行的长按检测（如果是短按，任务会被这里取消，从而不会触发 isPreviewActive = true）
+       
         longPressTask?.cancel()
         longPressTask = nil
                 
@@ -193,3 +193,4 @@ struct BoardView: View {
         return CGPoint(x: x, y: y)
     }
 }
+

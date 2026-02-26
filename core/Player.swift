@@ -1,9 +1,3 @@
-//
-//  Player.swift
-//  Treversi
-//
-//  Created by 刁泓宁 on 2026/2/5.
-//
 enum Player {
     case black
     case white

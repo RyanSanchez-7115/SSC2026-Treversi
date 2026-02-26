@@ -10,8 +10,11 @@ struct SettingView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             // 侧边栏：设置选项
             List {
-                Section("棋盘") {
-                    Picker("类型", selection: $config.boardType) {
+                Section("Board") {
+                    
+                    let layoutNames = previewState.boardType.layoutNames
+                    
+                    Picker("Type", selection: $config.boardType) {
                         ForEach(BoardType.allCases) { type in
                             Text(type.displayName).tag(type)
                         }
@@ -19,43 +22,41 @@ struct SettingView: View {
                     .onChange(of: config.boardType) { newType in
                         previewState.boardType = newType
                     }
-
-                    // 大小选择器（分段控件）
-                    Picker("大小", selection: $previewState.sizeLevel) {
-                        ForEach(SizeLevel.allCases) { level in
+                    .pickerStyle(.automatic)
+                    
+                    Picker("Size", selection: $previewState.sizeLevel) {
+                        ForEach(previewState.availableSizeLevels) { level in
                             Text(level.name).tag(level)
                         }
                     }
                     .pickerStyle(.segmented)
-                }
-
-                Section("初始布局") {
-                    let layoutNames = previewState.boardType.layoutNames
-                    Picker("布局", selection: $previewState.layoutIndex) {
+                    
+                    Picker("Initial Layout", selection: $previewState.layoutIndex) {
                         ForEach(0..<layoutNames.count, id: \.self) { index in
                             Text(layoutNames[index]).tag(index)
                         }
                     }
+                    .pickerStyle(.automatic)
                 }
 
-                Section("功能") {
-                    Toggle("显示合法落子点", isOn: $previewState.showLegalMoves)
-                    Toggle("预览翻转效果", isOn: $config.showPreview)
-                    Toggle("允许撤销", isOn: $config.enableUndo)
+                Section("Features") {
+                    Toggle("Show Legal Moves", isOn: $previewState.showLegalMoves)
+                    Toggle("Preview Moves", isOn: $config.showPreview)
+                    Toggle("Enable Undo", isOn: $config.enableUndo)
                 }
 
                 Section {
-                    Button("开始游戏") {
-                        // 将预览状态同步到 config
+                    Button("Start Game") {
                         config.boardType = previewState.boardType
                         config.radius = previewState.radius
                         config.layoutIndex = previewState.layoutIndex
+                        config.showLegalMoves = previewState.showLegalMoves
                         showingGame = true
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
-            .navigationTitle("游戏设置")
+            .navigationTitle("Game Settings")
         } detail: {
             // 详情区：预览棋盘
             VStack {
@@ -63,7 +64,7 @@ struct SettingView: View {
                     .aspectRatio(1, contentMode: .fit)
                     .padding()
 
-                Text("预览棋盘")
+                Text("Board Preview")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

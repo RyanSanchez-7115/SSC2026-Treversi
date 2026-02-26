@@ -139,6 +139,7 @@ struct MainMenuView: View {
     var body: some View {
         NavigationStack {
             VStack {
+                
                 DemoBoardView(
                     allCoordinates: demoAllCoordinates,
                     colorForCoordinate: { coord in
@@ -149,16 +150,15 @@ struct MainMenuView: View {
                     }
                 )
                 .aspectRatio(contentMode: .fit)
-                .padding()
 
-                Text("欢迎来到 Treversi")
+                Text("Welcome To Treversi")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .padding()
 
                 VStack(spacing: 20) {
                     NavigationLink(destination: SettingView()) {
-                        Text("开始游戏")
+                        Text("Start")
                             .font(.title2)
                             .foregroundColor(.white)
                             .padding()

@@ -9,16 +9,17 @@ enum SizeLevel: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var name: String {
         switch self {
-        case .small: return "小"
-        case .medium: return "中"
-        case .large: return "大"
+        case .small: return "Small"
+        case .medium: return "Medium"
+        case .large: return "Large"
         }
     }
 }
 
+
 class PreviewBoardState: ObservableObject {
     // 用户可调节的配置
-    @Published var boardType: BoardType = .hexagon {
+    @Published var boardType: BoardType = .diamond {
         didSet { handleBoardTypeChange() }
     }
     @Published var sizeLevel: SizeLevel = .medium {
@@ -42,8 +43,18 @@ class PreviewBoardState: ObservableObject {
 
     // 不同棋盘类型的最大半径几何体（用于获取所有坐标和范围判断）
     private let hexagonBoard = HexagonBoard(radius: 5)
-    private let diamondBoard = DiamondBoard(radius: 5)
+    private let diamondBoard = DiamondBoard(radius: 4)
     private let triangleBoard = TriangleBoard(radius: 4)
+    
+    // 根据当前棋盘类型返回可用的尺寸级别
+        var availableSizeLevels: [SizeLevel] {
+            switch boardType {
+            case .triangle:
+                return [.small, .large]
+            default:
+                return SizeLevel.allCases
+            }
+        }
 
     // 当前棋盘的所有坐标（基于最大半径）
     var allCoordinates: Set<TriangleCoordinate> {
@@ -83,6 +94,7 @@ class PreviewBoardState: ObservableObject {
         guard layoutIndex < layouts.count else { return [:] }
         return layouts[layoutIndex]
     }
+    
 
     @Published private(set) var legalMoves: Set<TriangleCoordinate> = []
 
@@ -93,13 +105,11 @@ class PreviewBoardState: ObservableObject {
 
     // MARK: - 变化处理
     private func handleBoardTypeChange() {
-        // 调整 sizeLevel 可用性（三角形不能选大）
-        if boardType == .triangle && sizeLevel == .large {
-            sizeLevel = .medium
+        // 如果切换到三角形棋盘且当前为 medium，自动切换到 small
+        if boardType == .triangle && sizeLevel == .medium {
+            sizeLevel = .small
         }
-        // 立即更新半径
         updateRadiusFromSizeLevel()
-        // 立即更新合法移动（无动画）
         updateLegalMoves()
     }
 
@@ -116,7 +126,7 @@ class PreviewBoardState: ObservableObject {
         pendingWorkItem?.cancel()
         scheduleLegalMovesUpdate(after: animationDuration)
     }
-
+    
     // MARK: - 辅助方法
     private func updateRadiusFromSizeLevel() {
         radius = radiusFor(boardType: boardType, sizeLevel: sizeLevel)
@@ -140,7 +150,7 @@ class PreviewBoardState: ObservableObject {
             switch sizeLevel {
             case .small: return 2
             case .medium: return 3
-            case .large: return 4 // 实际没有 large，但保持数值
+            case .large: return 4 
             }
         }
     }

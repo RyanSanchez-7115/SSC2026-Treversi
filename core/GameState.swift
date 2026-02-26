@@ -1,6 +1,5 @@
 import Foundation
 
-// MARK: - 游戏状态引擎（核心大脑）
 /// 管理棋盘状态、当前玩家、历史记录，并执行所有游戏规则计算。
 class GameState: ObservableObject {
     
@@ -13,10 +12,19 @@ class GameState: ObservableObject {
     @Published private(set) var isGameOver: Bool = false
     /// 可用的合法落子位置（实时计算）
     @Published private(set) var legalMoves: Set<TriangleCoordinate> = []
-    //动画状态
+    ///动画状态
     @Published var isAnimating = false
-        private let animationDuration: Double = 0.6  // 必须与 TriangleView 中的动画时长一致
+        private let animationDuration: Double = 0.6
         private var pendingAnimationWorkItem: DispatchWorkItem?
+    ///跳过回合提示消息
+    @Published var skipMessage: String?
+    ///游戏结束信息（用于弹窗）
+    @Published var gameOverInfo: (winner: Player?, blackCount: Int, whiteCount: Int)? {
+            didSet {
+                showGameOverModal = gameOverInfo != nil
+            }
+        }
+    @Published var showGameOverModal = false
     // MARK: - 私有属性
     /// 棋盘几何定义，用于查询邻居等
      let geometry: BoardGeometry
@@ -205,32 +213,50 @@ class GameState: ObservableObject {
 
     
     /// 检查游戏是否应结束（双方都无合法移动时）
-    private func checkGameOver() {
-        // 如果当前玩家无棋可下，尝试让对方走
-        if legalMoves.isEmpty {
-            let opponent = currentPlayer.opponent
-            // 临时检查对手是否有棋可下
-            var opponentHasMoves = false
-            for coord in geometry.allCoordinates where board[coord] == .empty {
-                if !flippedCoordinatesIfPlace(at: coord, by: opponent).isEmpty {
-                    opponentHasMoves = true
-                    break
+        private func checkGameOver() {
+            if legalMoves.isEmpty {
+                let opponent = currentPlayer.opponent
+                var opponentHasMoves = false
+                for coord in geometry.allCoordinates where board[coord] == .empty {
+                    if !flippedCoordinatesIfPlace(at: coord, by: opponent).isEmpty {
+                        opponentHasMoves = true
+                        break
+                    }
+                }
+
+                if !opponentHasMoves {
+                    // 游戏结束
+                    let counts = countPieces()
+                    gameOverInfo = (winner: winner(), blackCount: counts.black, whiteCount: counts.white)
+                    isGameOver = true
+                    print("游戏结束！")
+                } else {
+                    // 跳过当前玩家
+                    let message = "\(currentPlayer) 无法落子，跳过本回合"
+                    print(message)
+                    skipMessage = message
+                    currentPlayer = opponent
+                    recalculateLegalMoves()
                 }
             }
-            
-            // 如果对手也无棋可下，则游戏结束
-            if !opponentHasMoves {
-                isGameOver = true
-                print("游戏结束！")
+        }
+
+        /// 获取获胜方
+        func winner() -> Player? {
+            let counts = countPieces()
+            if counts.black > counts.white {
+                return .black
+            } else if counts.white > counts.black {
+                return .white
             } else {
-                // 对手有棋可下，则跳过当前玩家
-                print("\(currentPlayer) 无棋可下，回合跳过")
-                currentPlayer = opponent
-                recalculateLegalMoves()
+                return nil // 平局
             }
         }
-    }
-    
+
+        // 清除跳过提示（由视图调用）
+        func clearSkipMessage() {
+            skipMessage = nil
+        }
     /// 计算双方棋子数量
     func countPieces() -> (black: Int, white: Int) {
         var blackCount = 0
@@ -245,19 +271,6 @@ class GameState: ObservableObject {
         }
         
         return (blackCount, whiteCount)
-    }
-    
-    /// 获取获胜方（如果游戏结束）
-    func winner() -> Player? {
-        guard isGameOver else { return nil }
-        let counts = countPieces()
-        if counts.black > counts.white {
-            return .black
-        } else if counts.white > counts.black {
-            return .white
-        } else {
-            return nil // 平局
-        }
     }
     
     // MARK: - 游戏辅助功能

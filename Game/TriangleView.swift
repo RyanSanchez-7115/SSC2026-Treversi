@@ -1,13 +1,6 @@
-//
-//  TriangleView.swift
-//  Treversi
-//
-//  Created by 刁泓宁 on 2026/2/17.
-//
-
 import SwiftUI
 
-// 圆角三角形形状（保持不变）
+// 圆角三角形形状
 struct TriangleShape: Shape {
     let isPointingUp: Bool
     var cornerRadius: CGFloat
@@ -129,11 +122,11 @@ struct TriangleView: View {
     
     private var fillColor: Color {
         if isPreview {
-            return Color.orange.opacity(0.5)
+            return Color.green.opacity(0.3)
         } else if isPreviewFlipped {
-            return Color.yellow.opacity(0.5)
+            return Color.green.opacity(0.3)
         } else if isHovered {
-            return Color.yellow.opacity(0.6)
+            return Color.green.opacity(0.3)
         } else {
             switch displayPlayer {
             case .black:

@@ -3,7 +3,7 @@ import SwiftUI
 struct DemoBoardView: View {
     let allCoordinates: Set<TriangleCoordinate>
     let colorForCoordinate: (TriangleCoordinate) -> Color?
-    let side: CGFloat = 60
+    let side: CGFloat = 55
 
     var body: some View {
         GeometryReader { proxy in

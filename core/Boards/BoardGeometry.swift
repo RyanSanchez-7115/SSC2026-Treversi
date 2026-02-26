@@ -1,9 +1,3 @@
-//
-//  Untitled.swift
-//  Treversi
-//
-//  Created by 刁泓宁 on 2026/2/5.
-//
 import Foundation
 
 protocol BoardGeometry {
@@ -16,13 +10,6 @@ protocol BoardGeometry {
     /// 例如：某个坐标初始时为黑子 `[someCoordinate: .black]`
     var initialOccupation: [TriangleCoordinate: Player] { get }
     
-    // MARK: - 必需方法
-    /// **最核心的函数**：给定一个坐标，返回其所有直接相邻的坐标。
-    /// 游戏引擎完全依赖此函数来计算落子是否合法、翻转哪些棋子。
-    /// - Parameter coordinate: 要查询的三角形坐标
-    /// - Returns: 一个包含所有邻居坐标的集合
-    func neighbors(of coordinate: TriangleCoordinate) -> Set<TriangleCoordinate>
-    
     // MARK: - 可选但推荐的属性
     /// 棋盘的显示名称，用于UI（例如：“经典六边形”、“菱形战场”）。
     var displayName: String { get }
@@ -30,13 +17,7 @@ protocol BoardGeometry {
     /// 关于此棋盘策略特点的简短描述，用于UI提示。
     var description: String { get }
 }
-
-// 为协议提供默认实现，使这两个UI属性变为可选
-extension BoardGeometry {
-    var displayName: String { return "未命名棋盘" }
-    var description: String { return "" }
-}
-// MARK: - 棋盘类型枚举（用于SwiftUI Picker）
+// MARK: - 棋盘类型枚举
 enum BoardType: String, CaseIterable, Identifiable {
     case hexagon
     case diamond
@@ -44,7 +25,7 @@ enum BoardType: String, CaseIterable, Identifiable {
     
     var id: String { self.rawValue }
     
-    // 根据枚举创建具体的棋盘实例（带半径）
+    // 根据枚举创建具体的棋盘实例
     func geometry(radius: Int) -> any BoardGeometry {
         switch self {
         case .hexagon:
@@ -59,9 +40,9 @@ enum BoardType: String, CaseIterable, Identifiable {
     // 显示名称
     var displayName: String {
         switch self {
-        case .hexagon: return "经典六边形"
-        case .diamond: return "菱形战场"
-        case .triangle: return "异形领域"
+        case .hexagon: return "Classic Hexagon"
+        case .diamond: return "Dimond Field"
+        case .triangle: return "Trianguland"
         }
     }
     
@@ -85,11 +66,34 @@ enum BoardType: String, CaseIterable, Identifiable {
             return HexagonBoard.layouts[index]
         case .diamond:
             guard index < DiamondBoard.layouts.count else { return [:] }
-            return DiamondBoard.layouts[safe: index] ?? [:]
+            return DiamondBoard.layouts[index]
         case.triangle:
             guard index < TriangleBoard.layouts.count else { return [:] }
-            return TriangleBoard.layouts[safe: index] ?? [:]
+            return TriangleBoard.layouts[index]
         }
     }
 }
-
+// MARK: - 邻居计算（所有棋盘共享的逻辑）
+extension BoardGeometry {
+    func neighbors(of coordinate: TriangleCoordinate) -> Set<TriangleCoordinate> {
+        let (q, r, isUp) = (coordinate.q, coordinate.r, coordinate.isPointingUp)
+        if isUp {
+            return [
+                TriangleCoordinate(q: q, r: r - 1, isPointingUp: false),
+                TriangleCoordinate(q: q - 1, r: r, isPointingUp: false),
+                TriangleCoordinate(q: q + 1, r: r, isPointingUp: false)
+            ]
+        } else {
+            return [
+                TriangleCoordinate(q: q, r: r + 1, isPointingUp: true),
+                TriangleCoordinate(q: q - 1, r: r, isPointingUp: true),
+                TriangleCoordinate(q: q + 1, r: r, isPointingUp: true)
+            ]
+        }
+    }
+}
+// 为协议提供默认实现，使这两个UI属性变为可选
+extension BoardGeometry {
+    var displayName: String { return "Unnamed Board" }
+    var description: String { return "" }
+}

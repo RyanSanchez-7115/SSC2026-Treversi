@@ -3,8 +3,8 @@ import Foundation
 struct DiamondBoard: BoardGeometry {
     let radius: Int
     
-    var displayName: String { "菱形战场" }
-    var description: String { "菱形密铺的对称战场，对角线是战略要地。" }
+    var displayName: String { "Dimond Field" }
+    var description: String { "菱形的对称战场，两种发展方向" }
     
     // MARK: - 坐标生成（根据用户提供的算法）
     var allCoordinates: Set<TriangleCoordinate> {
@@ -20,25 +20,6 @@ struct DiamondBoard: BoardGeometry {
             }
         }
         return coords
-    }
-    
-    // MARK: - 邻居计算（与六边形完全相同，因为三角形网格局部结构一致）
-    func neighbors(of coordinate: TriangleCoordinate) -> Set<TriangleCoordinate> {
-        let (q, r, isUp) = (coordinate.q, coordinate.r, coordinate.isPointingUp)
-        
-        if isUp {
-            return [
-                TriangleCoordinate(q: q, r: r - 1, isPointingUp: false),
-                TriangleCoordinate(q: q - 1, r: r, isPointingUp: false),
-                TriangleCoordinate(q: q + 1, r: r, isPointingUp: false)
-            ]
-        } else {
-            return [
-                TriangleCoordinate(q: q, r: r + 1, isPointingUp: true),
-                TriangleCoordinate(q: q - 1, r: r, isPointingUp: true),
-                TriangleCoordinate(q: q + 1, r: r, isPointingUp: true)
-            ]
-        }
     }
     
     // MARK: - 默认初始布局
@@ -60,35 +41,34 @@ struct DiamondBoard: BoardGeometry {
 extension DiamondBoard {
     // 预定义的布局数组
     static let layouts: [[TriangleCoordinate: Player]] = [
-        // 布局0：经典开局（你之前设计的6个棋子）
+        // 布局0：classic开局
         [
             TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+                TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
+                TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+                TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
+                TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white
+        ],
+        // 布局1：irragular布局
+        [
             TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
             TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
-        ],
-        // 布局1：非对称布局
-        [
-           
-            //TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .black,
+            TriangleCoordinate(q: 2, r: 0, isPointingUp: false): .black,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+            TriangleCoordinate(q: -2, r: -1, isPointingUp: true): .white
             
         ],
-        // 布局2：激进布局（可自行设计）
+        // 布局2：激进布局
         [
             TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
             TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
             TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .white,
+            TriangleCoordinate(q: 0, r: -2, isPointingUp: false): .white,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
-  
         ]
     ]
-    static let layoutNames: [String] = ["经典", "对称", "激进"]
+    static let layoutNames: [String] = ["Classic", "Symmetrical", "Aggressive"]
 }
 extension DiamondBoard {
     /// 判断给定坐标是否在指定半径的菱形棋盘内（与 allCoordinates 生成逻辑一致）
