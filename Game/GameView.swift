@@ -14,15 +14,12 @@ struct GameView: View {
 
         let geometry: BoardGeometry
         switch config.boardType {
-        case .hexagon:
-            geometry = HexagonBoard(radius: config.radius)
-        case .diamond:
-            geometry = DiamondBoard(radius: config.radius)
-        case .triangle:
-            geometry = TriangleBoard(radius: config.radius)
+        case .hexagon: geometry = HexagonBoard(radius: config.radius)
+        case .diamond: geometry = DiamondBoard(radius: config.radius)
+        case .triangle: geometry = TriangleBoard(radius: config.radius)
         }
 
-        let layout = config.boardType.getLayout(at: config.layoutIndex)
+        let layout = config.boardType.getLayout(at: config.layoutIndex)   // 现在返回 Piece
         _gameState = StateObject(wrappedValue: GameState(geometry: geometry, initialOccupation: layout))
     }
 

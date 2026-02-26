@@ -1,64 +1,82 @@
-import Foundation
+import SwiftUI
 
-enum Piece: Hashable, Equatable{
+enum Piece: Hashable, Equatable {
     case empty
     case black
     case white
-    case neutral                  // 中立子
-    case directional(Direction)   // 方向子（带固定方向）
-    
-    var player: Player? {
+    case neutral                  // 中立子：不可翻转，可穿越
+    case directional(direction: Int)  // 方向子：0~5 对应6个方向
+
+    var owner: Player? {
         switch self {
-        case .black: return .black
-        case .white: return .white
-        default: return nil         // 中立和方向都不属于玩家
+        case .black:   return .black
+        case .white:   return .white
+        default:       return nil
         }
     }
-    
-    var isCapturable: Bool {        // 新增：是否可被翻转/占领
+
+    var isFlippable: Bool {
         switch self {
         case .black, .white: return true
-        default: return false
+        default:             return false
         }
     }
-    
-    var isNeutralLike: Bool {       // 中立或方向子，都不可翻转
-        !isCapturable
-    }
-    
-    // 方向子专用：检查是否匹配搜索方向
-    func matchesDirection(_ dirIndex: Int) -> Bool {
-        if case .directional(let dir) = self {
-            return dir.rawValue == dirIndex
-        }
-        return false
-    }
-}
 
-// NEW: 6方向枚举，对应GameState.directions索引
-enum Direction: Int, CaseIterable {
-    case left = 0, right = 1, northwest = 2, southwest = 3, northeast = 4, southeast = 5
-    
-    // UI旋转角度 (hex grid)
-    var rotationDegrees: Double {
+    var directionalDirection: Int? {
+        if case .directional(let dir) = self { return dir }
+        return nil
+    }
+
+    func color(fillOpacity: Double = 1.0) -> Color {
         switch self {
-        case .left: return 180
-        case .right: return 0
-        case .northwest: return 240
-        case .southwest: return 300
-        case .northeast: return 120
-        case .southeast: return 60
+        case .empty:      return .clear
+        case .black:      return .black
+        case .white:      return .white
+        case .neutral:    return .orange.opacity(0.4 * fillOpacity)
+        case .directional:
+            return .purple.opacity(0.4 * fillOpacity)
         }
+    }
+
+    func borderColor() -> Color {
+        switch self {
+        case .neutral:    return .orange.opacity(0.6)
+        case .directional: return .purple.opacity(0.6)
+        default:          return .gray.opacity(0.3)
+        }
+    }
+
+    func borderWidth() -> CGFloat {
+        switch self {
+        case .neutral, .directional: return 3
+        default:                     return 2
+        }
+    }
+
+    static func piece(for player: Player) -> Piece {
+        player == .black ? .black : .white
     }
 }
 
+extension Piece {
+    var opponentPiece: Piece? {
+        switch self {
+        case .black: return .white
+        case .white: return .black
+        default:     return nil
+        }
+    }
+}
 // 原Player保留（UI/当前玩家用）
 enum Player {
-    case black, white
-    
+    case black
+    case white
+
     var opponent: Player {
         self == .black ? .white : .black
     }
-    
-    var piece: Piece { self == .black ? .black : .white }
+
+    var name: String {
+        self == .black ? "Black" : "White"
+    }
 }

@@ -23,7 +23,7 @@ struct BoardView: View {
                 ForEach(Array(geometry.allCoordinates), id: \.self) { coord in
                     TriangleView(
                         coordinate: coord,
-                        player: gameState.board[coord] ?? .empty,
+                        piece: gameState.board[coord] ?? .empty,
                         isLegalMove: showLegalMoves && !gameState.isAnimating && gameState.legalMoves.contains(coord),
                         isPreview: (coord == previewCoord),
                         isPreviewFlipped: previewFlipped.contains(coord),

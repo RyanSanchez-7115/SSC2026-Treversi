@@ -2,8 +2,8 @@ import SwiftUI
 
 struct PreviewBoardView: View {
     @ObservedObject var state: PreviewBoardState
-    let side: CGFloat = 100        // 必须与 BoardView 中的 side 完全一致
-    let spacing: CGFloat = 7.0     // 必须与 BoardView 中的 spacing 完全一致
+    let side: CGFloat = 100
+    let spacing: CGFloat = 7.0
     var realside: CGFloat { side - spacing }
     
     var body: some View {
@@ -11,14 +11,12 @@ struct PreviewBoardView: View {
             ZStack {
                 ForEach(Array(state.allCoordinates), id: \.self) { coord in
                     let isWithin = state.isWithinRadius(coord)
-                    // 半径内：使用布局中的 player（如果没有则为 .empty）
-                    // 半径外：强制设为 .empty（但通过 opacity 隐藏）
-                    let player = isWithin ? (state.currentLayout[coord] ?? .empty) : .empty
-                    let isLegal = isWithin && state.showLegalMoves && !state.isAnimating && player == .empty && state.legalMoves.contains(coord)
+                    let piece = isWithin ? (state.currentLayout[coord] ?? .empty) : .empty
+                    let isLegal = isWithin && state.showLegalMoves && !state.isAnimating && piece == .empty && state.legalMoves.contains(coord)
                     
                     TriangleView(
                         coordinate: coord,
-                        player: player,
+                        piece: piece,                     // ← 改成 piece
                         isLegalMove: isLegal,
                         isPreview: false,
                         isPreviewFlipped: false,
@@ -26,14 +24,13 @@ struct PreviewBoardView: View {
                         side: realside
                     )
                     .position(position(for: coord, in: proxy.size))
-                    .opacity(isWithin ? 1 : 0)      // 半径外完全透明
-                    .allowsHitTesting(false)         // 禁止所有交互
+                    .opacity(isWithin ? 1 : 0)
+                    .allowsHitTesting(false)
                 }
             }
         }
     }
     
-    // 坐标转换函数：必须与 BoardView 中的 position 完全一致
     private func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
         let height = side * sqrt(2.8) / 2
         let horizontalSpacing = side / 2
