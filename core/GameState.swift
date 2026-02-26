@@ -104,43 +104,48 @@ class GameState: ObservableObject {
         ]
 
         for (dirIndex, direction) in directions.enumerated() {
-            var toFlip: [TriangleCoordinate] = []
-            var currentQ = coordinate.q
-            var currentR = coordinate.r
-            var currentIsUp = coordinate.isPointingUp
+                var toFlip: [TriangleCoordinate] = []
+                var currentQ = coordinate.q
+                var currentR = coordinate.r
+                var currentIsUp = coordinate.isPointingUp
 
-            while true {
-                let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
-                let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
-                guard geometry.allCoordinates.contains(nextCoord) else { break }
+                while true {
+                    let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
+                    let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
+                    guard geometry.allCoordinates.contains(nextCoord) else { break }
 
-                let nextPiece = board[nextCoord] ?? .empty
+                    let nextPiece = board[nextCoord] ?? .empty
 
-                // 可翻转的对手棋子（黑/白 或 方向子）
-                let isOpponent = (nextPiece.owner == opponent) || (nextPiece.directionalDirection != nil)
-                if isOpponent {
-                    if let dir = nextPiece.directionalDirection, dir != dirIndex {
-                        break
+                    switch nextPiece {
+                    case .black, .white:
+                        if nextPiece.owner == opponent {
+                            toFlip.append(nextCoord)
+                            currentQ = nextQ
+                            currentR = nextR
+                            currentIsUp = nextIsUp
+                        } else if nextPiece.owner == player && !toFlip.isEmpty {
+                            flipped.append(contentsOf: toFlip)
+                            break
+                        } else {
+                            break
+                        }
+                    case .neutral, .directional:
+                        // 关键：只在允许穿越时继续，不加入 toFlip
+                        if nextPiece.allowsTraversal(fromSearchDirIndex: dirIndex) {
+                            currentQ = nextQ
+                            currentR = nextR
+                            currentIsUp = nextIsUp
+                        } else {
+                            break  // 不允许穿越 → 中断路径
+                        }
+                    case .empty:
+                        break  // 空位中断
                     }
-                    toFlip.append(nextCoord)
-                    currentQ = nextQ
-                    currentR = nextR
-                    currentIsUp = nextIsUp
-                } else if nextPiece.owner == player && !toFlip.isEmpty {
-                    flipped.append(contentsOf: toFlip)
-                    break
-                } else if nextPiece == .neutral {
-                    currentQ = nextQ
-                    currentR = nextR
-                    currentIsUp = nextIsUp
-                } else {
-                    break
                 }
             }
+            return Array(Set(flipped))
         }
-        return Array(Set(flipped))
-    }
-
+    
     func previewFlipped(at coordinate: TriangleCoordinate) -> [TriangleCoordinate] {
         flippedCoordinatesIfPlace(at: coordinate, by: currentPlayer)
     }

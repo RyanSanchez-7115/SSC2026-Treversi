@@ -21,6 +21,17 @@ enum Piece: Hashable, Equatable {
         default:             return false
         }
     }
+    
+    func allowsTraversal(fromSearchDirIndex dirIndex: Int) -> Bool {
+            switch self {
+            case .neutral:
+                return true                     // 中立子总是允许穿越
+            case .directional(let restrictedDir):
+                return restrictedDir == dirIndex  // 只允许匹配的方向穿越
+            default:
+                return false                    // 普通棋子不“穿越”，而是被翻转或挡住
+            }
+        }
 
     var directionalDirection: Int? {
         if case .directional(let dir) = self { return dir }

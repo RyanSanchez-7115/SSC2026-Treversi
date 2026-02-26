@@ -58,14 +58,29 @@ struct TriangleView: View {
                     TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
                         .stroke(borderColor, lineWidth: borderWidth)
                 )
-            
-            if let dir = piece.directionalDirection {
-                Image(systemName: "arrow.right")
-                    .font(.system(size: side * 0.3, weight: .bold))
-                    .foregroundStyle(.purple.opacity(0.8))
-                    .rotationEffect(.degrees(Double(dir) * 60))
-                    .frame(width: side * 0.38, height: side * 0.38)
-                    .offset(x: 0, y: side * 0.14)
+            // 特殊棋子的图标层（方向子 + 中立子）
+            if displayPiece != .empty && displayPiece.owner == nil {
+                let iconSize: CGFloat = side * 0.3
+                let frameSize: CGFloat = side * 0.38
+                let offsetY = side * 0.14
+
+                if case .directional(let dir) = displayPiece {
+                    // 方向子
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: iconSize, weight: .bold))
+                        .foregroundStyle(.purple.opacity(0.8))
+                        .rotationEffect(.degrees(Double(dir) * 60))
+                        .frame(width: frameSize, height: frameSize)
+                        .offset(x: 0, y: offsetY)
+                } else if case .neutral = displayPiece {
+                    // 中立子
+                    Image(systemName: "asterisk")
+                        .font(.system(size: side * 0.3, weight: .bold))
+                        .foregroundStyle(.orange.opacity(0.85))
+                        .rotationEffect(.degrees(30))
+                        .frame(width: frameSize, height: frameSize)
+                        .offset(x: 0, y: offsetY)
+                }
             }
         }
         .frame(width: side, height: side * sqrt(3)/2)
