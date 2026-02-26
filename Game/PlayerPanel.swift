@@ -61,7 +61,7 @@ struct PlayerPanel: View {
                 .buttonStyle(PanelButtonStyle())
                 
                 Button(action: onBack) {
-                    Label("Back to Setting", systemImage: "xmark")
+                    Label("Back to Settings", systemImage: "xmark")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PanelButtonStyle())

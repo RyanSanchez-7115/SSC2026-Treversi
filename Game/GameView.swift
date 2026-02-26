@@ -40,21 +40,27 @@ struct GameView: View {
                     )
                     .frame(height: 100)
 
-                    // 棋盘区域
                     ZStack {
                         Color.clear
-                        BoardView(
-                            gameState: gameState,
-                            geometry: gameState.geometry,
-                            showLegalMoves: config.showLegalMoves,
-                            showPreview: config.showPreview,
-                            isEnabled: !gameState.isGameOver && !gameState.isAnimating
-                        )
-                        .aspectRatio(1, contentMode: .fit)
-                        .frame(
-                            maxWidth: min(geometry.size.width, geometry.size.height - 200),
-                            maxHeight: min(geometry.size.width, geometry.size.height - 200)
-                        )
+                        
+                        if geometry.size.width > 10 && geometry.size.height > 10 {  // 安全阈值，避免 size 太小崩溃
+                            BoardView(
+                                gameState: gameState,
+                                geometry: gameState.geometry,
+                                showLegalMoves: config.showLegalMoves,
+                                showPreview: config.showPreview,
+                                isEnabled: !gameState.isGameOver && !gameState.isAnimating
+                            )
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(
+                                maxWidth: min(geometry.size.width, geometry.size.height),
+                                maxHeight: min(geometry.size.width, geometry.size.height)
+                            )
+                        } else {
+                            // 占位视图，避免崩溃
+                            ProgressView()
+                                .frame(width: 50, height: 50)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -131,27 +137,27 @@ struct GameOverView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("游戏结束")
+            Text("Game Over")
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
             if let winner = winner {
-                Text("获胜方：\(winner == .black ? "黑方" : "白方")")
+                Text("\(winner == .black ? "Black" : "White") Wins!")
                     .font(.title2)
             } else {
-                Text("平局")
+                Text("Draw")
                     .font(.title2)
             }
 
             HStack(spacing: 40) {
                 VStack {
-                    Text("黑棋")
+                    Text("Black")
                         .font(.headline)
                     Text("\(blackCount)")
                         .font(.title)
                 }
                 VStack {
-                    Text("白棋")
+                    Text("White")
                         .font(.headline)
                     Text("\(whiteCount)")
                         .font(.title)
@@ -160,19 +166,18 @@ struct GameOverView: View {
             .padding()
 
             HStack(spacing: 20) {
-                Button("重新开始") {
+                Button("Restart") {
                     onRestart()
                 }
                 .buttonStyle(.borderedProminent)
 
-                Button("返回设置") {
+                Button("Back to settings") {
                     onBack()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
             }
         }
-        .padding(40)
-        .background(Color(.systemBackground))
+        .padding(20)
         .cornerRadius(20)
         .shadow(radius: 20)
     }

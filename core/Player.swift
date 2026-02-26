@@ -77,6 +77,12 @@ extension Piece {
         default:     return nil
         }
     }
+    var isAnimatable: Bool {
+            switch self {
+            case .empty: return false
+            default: return true  // 黑白 + neutral + directional 都动画
+            }
+        }
 }
 // 原Player保留（UI/当前玩家用）
 enum Player {

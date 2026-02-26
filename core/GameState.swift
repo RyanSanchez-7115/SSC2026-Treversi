@@ -108,8 +108,11 @@ class GameState: ObservableObject {
                 var currentQ = coordinate.q
                 var currentR = coordinate.r
                 var currentIsUp = coordinate.isPointingUp
+                var stepCount = 0  // 新增：步数计数器
+                let maxSteps = geometry.allCoordinates.count / 4 + 10  // 安全上限，防爆
 
-                while true {
+                while stepCount < maxSteps {
+                    stepCount += 1
                     let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
                     let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
                     guard geometry.allCoordinates.contains(nextCoord) else { break }
@@ -130,16 +133,16 @@ class GameState: ObservableObject {
                             break
                         }
                     case .neutral, .directional:
-                        // 关键：只在允许穿越时继续，不加入 toFlip
                         if nextPiece.allowsTraversal(fromSearchDirIndex: dirIndex) {
                             currentQ = nextQ
                             currentR = nextR
                             currentIsUp = nextIsUp
+                            // 继续，不加到 toFlip
                         } else {
-                            break  // 不允许穿越 → 中断路径
+                            break
                         }
                     case .empty:
-                        break  // 空位中断
+                        break
                     }
                 }
             }
@@ -165,7 +168,7 @@ class GameState: ObservableObject {
                 gameOverInfo = (winner: winner(), blackCount: counts.black, whiteCount: counts.white)
                 isGameOver = true
             } else {
-                skipMessage = "\(currentPlayer.name) 无法落子，跳过本回合"
+                skipMessage = "\(currentPlayer.name) has no valid moves, turn skipped"
                 currentPlayer = opponent
                 recalculateLegalMoves()
             }
@@ -225,39 +228,50 @@ extension GameState {
         ]
 
         for (dirIndex, direction) in directions.enumerated() {
-            var toFlip: [TriangleCoordinate] = []
-            var currentQ = coordinate.q
-            var currentR = coordinate.r
-            var currentIsUp = coordinate.isPointingUp
+                var toFlip: [TriangleCoordinate] = []
+                var currentQ = coordinate.q
+                var currentR = coordinate.r
+                var currentIsUp = coordinate.isPointingUp
+                var stepCount = 0  // 新增：步数计数器
+                let maxSteps = geometry.allCoordinates.count / 4 + 10  // 安全上限，防爆
 
-            while true {
-                let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
-                let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
-                guard geometry.allCoordinates.contains(nextCoord) else { break }
+                while stepCount < maxSteps {
+                    stepCount += 1
+                    let (nextQ, nextR, nextIsUp) = direction(currentQ, currentR, currentIsUp)
+                    let nextCoord = TriangleCoordinate(q: nextQ, r: nextR, isPointingUp: nextIsUp)
+                    guard geometry.allCoordinates.contains(nextCoord) else { break }
 
-                let nextPiece = board[nextCoord] ?? .empty
+                    let nextPiece = board[nextCoord] ?? .empty
 
-                let isOpponent = (nextPiece.owner == opponent) || (nextPiece.directionalDirection != nil)
-                if isOpponent {
-                    if let dir = nextPiece.directionalDirection, dir != dirIndex { break }
-                    toFlip.append(nextCoord)
-                    currentQ = nextQ
-                    currentR = nextR
-                    currentIsUp = nextIsUp
-                } else if nextPiece.owner == player && !toFlip.isEmpty {
-                    flipped.append(contentsOf: toFlip)
-                    break
-                } else if nextPiece == .neutral {
-                    currentQ = nextQ
-                    currentR = nextR
-                    currentIsUp = nextIsUp
-                } else {
-                    break
+                    switch nextPiece {
+                    case .black, .white:
+                        if nextPiece.owner == opponent {
+                            toFlip.append(nextCoord)
+                            currentQ = nextQ
+                            currentR = nextR
+                            currentIsUp = nextIsUp
+                        } else if nextPiece.owner == player && !toFlip.isEmpty {
+                            flipped.append(contentsOf: toFlip)
+                            break
+                        } else {
+                            break
+                        }
+                    case .neutral, .directional:
+                        if nextPiece.allowsTraversal(fromSearchDirIndex: dirIndex) {
+                            currentQ = nextQ
+                            currentR = nextR
+                            currentIsUp = nextIsUp
+                            // 继续，不加到 toFlip
+                        } else {
+                            break
+                        }
+                    case .empty:
+                        break
+                    }
                 }
             }
+            return Array(Set(flipped))
         }
-        return Array(Set(flipped))
-    }
 
     static func legalMoves(for player: Player, board: [TriangleCoordinate: Piece], geometry: BoardGeometry) -> Set<TriangleCoordinate> {
         var moves = Set<TriangleCoordinate>()

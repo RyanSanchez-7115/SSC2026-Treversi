@@ -1,9 +1,3 @@
-//
-//  TriangleCoordinate.swift
-//  Treversi
-//
-//  Created by 刁泓宁 on 2026/2/5.
-//
 // 采用六边形网格中经典的立方坐标系
 struct TriangleCoordinate: Hashable {
     // 立方坐标的三个轴：q, r, s。对于任何有效坐标，满足 q + r + s = 0

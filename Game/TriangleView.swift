@@ -91,11 +91,8 @@ struct TriangleView: View {
             perspective: 0.3
         )
         .onChange(of: piece) { newPiece in
-            if displayPiece != newPiece && newPiece.isFlippable && displayPiece != .empty {
-                performFlipAnimation(to: newPiece)
-            } else {
-                displayPiece = newPiece
-            }
+            guard displayPiece != newPiece else { return }
+            performFlipAnimation(to: newPiece)
         }
         .onAppear {
             if displayPiece != piece {

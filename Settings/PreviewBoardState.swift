@@ -25,6 +25,7 @@ class PreviewBoardState: ObservableObject {
     @Published var isAnimating: Bool = false
     private let animationDuration: TimeInterval = 0.6
     private var pendingWorkItem: DispatchWorkItem?
+    @Published var isLayoutAnimating = false
 
     let maxRadius = 5
     private let hexagonBoard = HexagonBoard(radius: 5)

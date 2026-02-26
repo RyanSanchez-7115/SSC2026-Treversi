@@ -26,6 +26,13 @@ struct PreviewBoardView: View {
                     .position(position(for: coord, in: proxy.size))
                     .opacity(isWithin ? 1 : 0)
                     .allowsHitTesting(false)
+                    .animation(
+                        .easeInOut(duration: 0.6)
+                        .delay(
+                            Double(coord.q + coord.r + (coord.isPointingUp ? 10 : 0)) * 0.03
+                        ),  // 根据 q + r 计算延迟，0.03秒间隔，视觉波浪效果
+                        value: state.layoutIndex  // 依赖 layoutIndex 变化触发
+                    )
                 }
             }
         }
