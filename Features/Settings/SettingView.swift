@@ -44,7 +44,19 @@ struct SettingView: View {
                     Toggle("Preview Moves", isOn: $config.showPreview)
                     Toggle("Enable Undo", isOn: $config.enableUndo)
                 }
-
+                
+                Section("Special Pieces") {
+                    Toggle("Neutral Pieces", isOn: $config.enableNeutral)
+                        .onChange(of: config.enableNeutral) { newValue in
+                            previewState.enableNeutral = newValue
+                        }
+                    
+                    Toggle("Directional Pieces", isOn: $config.enableDirectional)
+                        .onChange(of: config.enableDirectional) { newValue in
+                            previewState.enableDirectional = newValue
+                        }
+                }
+                
                 Section {
                     Button("Start Game") {
                         config.boardType = previewState.boardType

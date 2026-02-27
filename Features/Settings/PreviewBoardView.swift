@@ -30,7 +30,6 @@ struct PreviewBoardView: View {
             }
         }
     }
-    
     private func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
         let height = side * sqrt(2.8) / 2
         let horizontalSpacing = side / 2
