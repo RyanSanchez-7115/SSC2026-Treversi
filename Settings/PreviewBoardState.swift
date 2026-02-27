@@ -2,39 +2,64 @@ import SwiftUI
 
 enum SizeLevel: Int, CaseIterable, Identifiable {
     case small = 0
-    case medium = 1
-    case large = 2
-
+    case medium = 1  // 现在是最大尺寸
+    
     var id: Int { rawValue }
     var name: String {
         switch self {
         case .small: return "Small"
-        case .medium: return "Medium"
-        case .large: return "Large"
+        case .medium: return "Large"  // 改名字为 Large
         }
     }
 }
 
 class PreviewBoardState: ObservableObject {
-    @Published var boardType: BoardType = .diamond { didSet { handleBoardTypeChange() } }
-    @Published var sizeLevel: SizeLevel = .medium { didSet { handleSizeLevelChange() } }
+    @Published var boardType: BoardType = .hexagon{ didSet { handleBoardTypeChange() } }
+    @Published var sizeLevel: SizeLevel = .small{ didSet { handleSizeLevelChange() } }
     @Published var layoutIndex: Int = 0 { didSet { handleLayoutIndexChange() } }
     @Published var showLegalMoves: Bool = true
-
+    @Published private(set) var legalMoves: Set<TriangleCoordinate> = []
     @Published private(set) var radius: Int = 3
     @Published var isAnimating: Bool = false
     private let animationDuration: TimeInterval = 0.6
     private var pendingWorkItem: DispatchWorkItem?
-    @Published var isLayoutAnimating = false
-
-    let maxRadius = 5
-    private let hexagonBoard = HexagonBoard(radius: 5)
-    private let diamondBoard = DiamondBoard(radius: 4)
+  
+    private let hexagonBoard = HexagonBoard(radius: 4)
+    private let diamondBoard = DiamondBoard(radius: 3)
     private let triangleBoard = TriangleBoard(radius: 4)
+    
+    
+    private func radiusFor(boardType: BoardType, sizeLevel: SizeLevel) -> Int {
+        switch boardType {
+        case .hexagon:
+            switch sizeLevel {
+            case .small: return 3
+            case .medium: return 4
+            }
+        case .diamond:
+            switch sizeLevel {
+            case .small: return 2
+            case .medium: return 3
+            }
+        case .triangle:
+            switch sizeLevel {
+            case .small: return 2
+            case .medium: return 3
+            }
+        }
+    }
+    // MARK: - 缓存机制（彻底解决切换卡顿）
+    private struct CacheKey: Hashable {
+        let boardType: BoardType
+        let sizeLevel: SizeLevel
+        let layoutIndex: Int
+    }
+
+    private var legalMovesCache: [CacheKey: Set<TriangleCoordinate>] = [:]
     
     var availableSizeLevels: [SizeLevel] {
         switch boardType {
-        case .triangle: return [.small, .large]
+        case .triangle: return [.small, .medium]
         default: return SizeLevel.allCases
         }
     }
@@ -54,7 +79,7 @@ class PreviewBoardState: ObservableObject {
         case .triangle: return TriangleBoard(radius: radius)
         }
     }
-
+    
     var currentLayout: [TriangleCoordinate: Piece] {
         let layouts: [[TriangleCoordinate: Piece]]
         switch boardType {
@@ -66,7 +91,6 @@ class PreviewBoardState: ObservableObject {
         return layouts[layoutIndex]
     }
     
-    @Published private(set) var legalMoves: Set<TriangleCoordinate> = []
 
     init() {
         updateRadiusFromSizeLevel()
@@ -74,7 +98,7 @@ class PreviewBoardState: ObservableObject {
     }
 
     private func handleBoardTypeChange() {
-        if boardType == .triangle && sizeLevel == .medium { sizeLevel = .small }
+        sizeLevel = .small  // 切换棋盘类型时，默认回小尺寸
         updateRadiusFromSizeLevel()
         updateLegalMoves()
     }
@@ -94,17 +118,6 @@ class PreviewBoardState: ObservableObject {
         radius = radiusFor(boardType: boardType, sizeLevel: sizeLevel)
     }
 
-    private func radiusFor(boardType: BoardType, sizeLevel: SizeLevel) -> Int {
-        switch boardType {
-        case .hexagon:
-            switch sizeLevel { case .small: return 3; case .medium: return 4; case .large: return 5 }
-        case .diamond:
-            switch sizeLevel { case .small: return 2; case .medium: return 3; case .large: return 4 }
-        case .triangle:
-            switch sizeLevel { case .small: return 2; case .medium: return 3; case .large: return 4 }
-        }
-    }
-
     private func scheduleLegalMovesUpdate(after delay: TimeInterval) {
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
@@ -117,12 +130,30 @@ class PreviewBoardState: ObservableObject {
     }
 
     private func updateLegalMoves() {
+        let key = CacheKey(
+            boardType: boardType,
+            sizeLevel: sizeLevel,
+            layoutIndex: layoutIndex
+        )
+        
+        // 1. 命中缓存 → 瞬间返回
+        if let cached = legalMovesCache[key] {
+            legalMoves = cached
+            return
+        }
+        
+        // 2. 未命中 → 计算并缓存
         let geometry = currentGeometry
         var boardState: [TriangleCoordinate: Piece] = [:]
         for coord in geometry.allCoordinates {
             boardState[coord] = currentLayout[coord] ?? .empty
         }
-        legalMoves = GameState.legalMoves(for: .black, board: boardState, geometry: geometry)
+        
+        let computed = GameState.legalMoves(for: .black, board: boardState, geometry: geometry)
+        
+        // 存缓存
+        legalMovesCache[key] = computed
+        legalMoves = computed
     }
 
     func isWithinRadius(_ coord: TriangleCoordinate) -> Bool {

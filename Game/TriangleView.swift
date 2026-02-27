@@ -27,7 +27,7 @@ struct TriangleShape: Shape {
 
 struct TriangleView: View {
     let coordinate: TriangleCoordinate
-    let piece: Piece                     // ← 改成 Piece
+    let piece: Piece
     let isLegalMove: Bool
     let isPreview: Bool
     let isPreviewFlipped: Bool
@@ -58,41 +58,58 @@ struct TriangleView: View {
                     TriangleShape(isPointingUp: coordinate.isPointingUp, cornerRadius: 2)
                         .stroke(borderColor, lineWidth: borderWidth)
                 )
-            // 特殊棋子的图标层（方向子 + 中立子）
-            if displayPiece != .empty && displayPiece.owner == nil {
-                let iconSize: CGFloat = side * 0.3
-                let frameSize: CGFloat = side * 0.38
-                let offsetY = side * 0.14
-
-                if case .directional(let dir) = displayPiece {
-                    // 方向子
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: iconSize, weight: .bold))
-                        .foregroundStyle(.purple.opacity(0.8))
-                        .rotationEffect(.degrees(Double(dir) * 60))
-                        .frame(width: frameSize, height: frameSize)
-                        .offset(x: 0, y: offsetY)
-                } else if case .neutral = displayPiece {
-                    // 中立子
-                    Image(systemName: "asterisk")
-                        .font(.system(size: side * 0.3, weight: .bold))
-                        .foregroundStyle(.orange.opacity(0.85))
-                        .rotationEffect(.degrees(30))
-                        .frame(width: frameSize, height: frameSize)
-                        .offset(x: 0, y: offsetY)
+            
+            // 计算三角形的几何中心（centroid）
+            let centroid: CGPoint = {
+                let rect = CGRect(x: 0, y: 0, width: side, height: side * sqrt(3) / 2)
+                let p1, p2, p3: CGPoint
+                if coordinate.isPointingUp {
+                    p1 = CGPoint(x: rect.midX, y: rect.minY)          // 顶点
+                    p2 = CGPoint(x: rect.minX, y: rect.maxY)          // 左底
+                    p3 = CGPoint(x: rect.maxX, y: rect.maxY)          // 右底
+                } else {
+                    p1 = CGPoint(x: rect.midX, y: rect.maxY)          // 底点
+                    p2 = CGPoint(x: rect.maxX, y: rect.minY)          // 右顶
+                    p3 = CGPoint(x: rect.minX, y: rect.minY)          // 左顶
                 }
+                // 三角形中心 = 三个顶点坐标平均
+                let centerX = (p1.x + p2.x + p3.x) / 3
+                let centerY = (p1.y + p2.y + p3.y) / 3
+                return CGPoint(x: centerX, y: centerY)
+            }()
+            
+            // 特殊棋子的图标层（方向子 + 中立子），定位到 centroid
+            if displayPiece != .empty && displayPiece.owner == nil {
+                Group {
+                    let iconSize: CGFloat = side * 0.3
+                    let frameSize: CGFloat = side * 0.38
+                    
+                    if case .directional(let dir) = displayPiece {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: iconSize, weight: .bold))
+                            .foregroundStyle(Color.purple.opacity(0.8))
+                            .rotationEffect(.degrees(Double(dir) * 60))
+                            .frame(width: frameSize, height: frameSize)
+                    } else if case .neutral = displayPiece {
+                        Image(systemName: "asterisk")
+                            .font(.system(size: iconSize, weight: .bold))
+                            .foregroundStyle(Color.orange.opacity(0.85))
+                            .rotationEffect(.degrees(30))
+                            .frame(width: frameSize, height: frameSize)
+                    }
+                }
+                .position(centroid)  // 关键：将图标容器定位到三角形的几何中心
             }
         }
         .frame(width: side, height: side * sqrt(3)/2)
         .scaleEffect(isPreview ? 0.85 : 1.0)
-        .rotation3DEffect(
-            .degrees(rotationAngle),
-            axis: (x: 0, y: 1, z: 0),
-            perspective: 0.3
-        )
+        .rotation3DEffect(.degrees(rotationAngle), axis: (x: 0, y: 1, z: 0), perspective: 0.3)
         .onChange(of: piece) { newPiece in
-            guard displayPiece != newPiece else { return }
-            performFlipAnimation(to: newPiece)
+            if displayPiece != newPiece {
+                performFlipAnimation(to: newPiece)
+            } else {
+                displayPiece = newPiece
+            }
         }
         .onAppear {
             if displayPiece != piece {
@@ -124,7 +141,7 @@ struct TriangleView: View {
     
     private var fillColor: Color {
         if isPreview {
-            return Color.green.opacity(0.4)
+            return Color.green.opacity(0.3)
         } else if isPreviewFlipped {
             return Color.green.opacity(0.3)
         } else if isHovered {
@@ -133,7 +150,7 @@ struct TriangleView: View {
             switch displayPiece {
             case .black: return .black
             case .white: return .white
-            case .neutral: return .yellow.opacity(0.4)
+            case .neutral: return .orange.opacity(0.4)
             case .directional: return .purple.opacity(0.4)
             case .empty: return isLegalMove ? Color.green.opacity(0.3) : Color(.systemGray3)
             }

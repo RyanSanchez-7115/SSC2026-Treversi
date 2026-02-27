@@ -59,13 +59,13 @@ extension DiamondBoard {
         ],
         // 3 Special
         [
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .neutral,
             TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
             TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 2, r: -1, isPointingUp: false): .neutral,
-            TriangleCoordinate(q: -2, r: 0, isPointingUp: true): .directional(direction: 0),
-            TriangleCoordinate(q: 1, r: -2, isPointingUp: false): .directional(direction: 3)
+            TriangleCoordinate(q: 2, r: -1, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .directional(direction: 0),
+            TriangleCoordinate(q: 1, r: -2, isPointingUp: true): .directional(direction: 3)
         ]
     ]
     static let layoutNames: [String] = ["Classic", "Symmetrical", "Aggressive", "Special"]

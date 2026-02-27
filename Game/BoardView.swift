@@ -3,8 +3,8 @@ import SwiftUI
 struct BoardView: View {
     @ObservedObject var gameState: GameState
     let geometry: BoardGeometry
-    let side: CGFloat = 85
-    let spacing: CGFloat = 7.0
+    let side: CGFloat = 100
+    let spacing: CGFloat = 8.0
     var realside: CGFloat { side - spacing }
     let showLegalMoves: Bool
     let showPreview: Bool
@@ -187,7 +187,16 @@ struct BoardView: View {
         let verticalSpacing = height
         let centerX = horizontalSpacing * CGFloat(coord.q)
         let centerY = -verticalSpacing * CGFloat(coord.r)
-        let anchorOffsetY = height / 2
+        // 根据棋盘类型调整锚点偏移,实现视觉平衡
+            let anchorOffsetY: CGFloat
+            switch type(of: geometry) {
+            case is HexagonBoard.Type, is DiamondBoard.Type:
+                anchorOffsetY = height / 2
+            case is TriangleBoard.Type:
+                anchorOffsetY = -height*0.9
+            default:
+                anchorOffsetY = height / 2
+            }
         let x = size.width / 2 + centerX
         let y = size.height / 2 + centerY - anchorOffsetY
         return CGPoint(x: x, y: y)

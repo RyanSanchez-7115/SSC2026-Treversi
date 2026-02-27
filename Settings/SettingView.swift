@@ -63,7 +63,9 @@ struct SettingView: View {
                 PreviewBoardView(state: previewState)
                     .aspectRatio(1, contentMode: .fit)
                     .padding()
-
+                Text("切换棋盘类型时会自动切换到小尺寸预览")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 Text("Board Preview")
                     .font(.caption)
                     .foregroundColor(.secondary)

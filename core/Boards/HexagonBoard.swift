@@ -38,7 +38,7 @@ extension HexagonBoard {
     static let layouts: [[TriangleCoordinate: Piece]] = [
         // 0 Classic
         [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .directional(direction: 3),
             TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
             TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,

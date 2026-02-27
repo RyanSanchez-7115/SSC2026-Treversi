@@ -7,12 +7,12 @@ struct TriangleBoard: BoardGeometry {
     
     var allCoordinates: Set<TriangleCoordinate> {
         var coords = Set<TriangleCoordinate>()
-        for r in -radius...radius {
-            let qStart = -radius + r
-            let qEnd = radius - r
+        for r in -radius...radius*2 - 1 {
+            let qStart = -radius*2 + 1 + r
+            let qEnd = radius*2 - 1 - r
             for q in qStart...qEnd {
                 let s = -q - r
-                coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 != 0 ? false : true))
+                coords.insert(TriangleCoordinate(q: q, r: r, isPointingUp: s % 2 == 0 ? false : true))
             }
         }
         return coords
@@ -20,10 +20,10 @@ struct TriangleBoard: BoardGeometry {
     
     var initialOccupation: [TriangleCoordinate: Piece] {
         var occupation: [TriangleCoordinate: Piece] = [:]
-        occupation[TriangleCoordinate(q: -1, r: -1, isPointingUp: false)] = .black
-        occupation[TriangleCoordinate(q: 0, r: 0, isPointingUp: true)] = .black
+        occupation[TriangleCoordinate(q: -1, r: -1, isPointingUp: true)] = .black
+        occupation[TriangleCoordinate(q: 0, r: 0, isPointingUp: false)] = .black
         occupation[TriangleCoordinate(q: 1, r: -1, isPointingUp: false)] = .black
-        occupation[TriangleCoordinate(q: -1, r: 0, isPointingUp: false)] = .white
+        occupation[TriangleCoordinate(q: -1, r: 0, isPointingUp: true)] = .white
         occupation[TriangleCoordinate(q: 1, r: 0, isPointingUp: true)] = .white
         occupation[TriangleCoordinate(q: 0, r: -1, isPointingUp: true)] = .white
         return occupation
@@ -34,9 +34,9 @@ extension TriangleBoard {
     func isCoordinate(_ coord: TriangleCoordinate, withinRadius radius: Int) -> Bool {
         let r = coord.r
         let q = coord.q
-        guard r >= -radius && r <= radius else { return false }
-        let qStart = -radius + r
-        let qEnd = radius - r
+        guard r >= -radius && r <= radius*2 - 1 else { return false }
+        let qStart = -radius*2 + 1 + r
+        let qEnd = radius*2 - 1 - r
         return q >= qStart && q <= qEnd
     }
 }
@@ -45,10 +45,10 @@ extension TriangleBoard {
     static let layouts: [[TriangleCoordinate: Piece]] = [
         // 0 Original
         [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: true): .black,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: true): .white
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white
         ],
         // 1 Classic
         [
@@ -70,12 +70,12 @@ extension TriangleBoard {
         ],
         // 3 Special
         [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: true): .black,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: false): .neutral,
-            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .directional(direction: 2),
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .directional(direction: 0),
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .directional(direction: 1),
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .directional(direction: 2),
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .directional(direction: 3),
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .directional(direction: 4),
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .directional(direction: 5),
             TriangleCoordinate(q: 0, r: -2, isPointingUp: false): .directional(direction: 5)
         ]
     ]
