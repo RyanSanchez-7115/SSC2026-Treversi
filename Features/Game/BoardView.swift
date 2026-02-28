@@ -1,25 +1,50 @@
 import SwiftUI
 
+/**
+ * @struct BoardView
+ * @brief The main interactive game board view.
+ * @details This view is responsible for rendering the triangular grid, displaying the pieces,
+ *          and handling all user interactions, including simple taps to place a piece and a
+ *          long-press gesture to preview a move before confirming. It observes a `GameState`
+ *          object to reflect real-time changes in the game.
+ */
 struct BoardView: View {
+    // MARK: - Properties
+
+    /// The game state object, which this view observes for changes.
     @ObservedObject var gameState: GameState
+    /// The geometric model of the board (e.g., Hexagon, Diamond).
     let geometry: BoardGeometry
+    /// The base side length for a triangle cell, including spacing.
     let side: CGFloat = 100
-    let spacing: CGFloat = 8.0
+    /// The spacing between triangle cells.
+    let spacing: CGFloat = 7.0
+    /// The actual rendering side length of a triangle cell (side - spacing).
     var realside: CGFloat { side - spacing }
+    /// A flag to control the visibility of legal move indicators.
     let showLegalMoves: Bool
+    /// A flag to enable or disable the long-press preview feature.
     let showPreview: Bool
+    /// A flag to enable or disable user interaction with the board.
     var isEnabled: Bool = true
-    
+
+    // MARK: - State for Interaction
+
+    /// The coordinate currently being previewed via long-press.
     @State private var previewCoord: TriangleCoordinate?
+    /// The set of coordinates that would be flipped if a piece is placed at `previewCoord`.
     @State private var previewFlipped: Set<TriangleCoordinate> = []
-    
-    // MARK: - 交互状态
+    /// Tracks if the long-press preview gesture is currently active.
     @State private var isPreviewActive: Bool = false
-    @State private var longPressTask: Task<Void, Never>? = nil // 用于检测长按的任务
-    
+    /// The background task that detects a long-press gesture.
+    @State private var longPressTask: Task<Void, Never>?
+
+    // MARK: - Body
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
+                // Layer 1: Render all triangle cells for the board grid.
                 ForEach(Array(geometry.allCoordinates), id: \.self) { coord in
                     TriangleView(
                         coordinate: coord,
@@ -32,143 +57,172 @@ struct BoardView: View {
                     )
                     .position(position(for: coord, in: proxy.size))
                 }
-                
-                // 手势层
+
+                // Layer 2: Gesture handling overlay.
                 if isEnabled && !gameState.isAnimating {
-                    if showPreview {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { value in
-                                        handleTouchDownOrMove(value, in: proxy)
-                                    }
-                                    .onEnded { value in
-                                        handleTouchUp(value, in: proxy)
-                                    }
-                            )
-                    } else {
-                        // 非预览模式：直接落子
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onEnded { value in
-                                        let location = value.location
-                                        guard let coord = findCoordinate(at: location, in: proxy.size) else { return }
-                                        if gameState.legalMoves.contains(coord) {
-                                            _ = gameState.makeMove(at: coord)
-                                        }
-                                    }
-                            )
-                    }
+                    gestureOverlay(in: proxy)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
     }
-    
-    // MARK: - 手势处理逻辑
-    
-    func handleTouchDownOrMove(_ value: DragGesture.Value, in proxy: GeometryProxy) {
-        guard !gameState.isAnimating else { return }
-        let location = value.location
 
-        // 1. 如果这是新的触摸（还没有任务），启动长按检测任务
+    // MARK: - Gesture Handling
+
+    /**
+     * @brief Creates a transparent overlay that captures user gestures.
+     * @param proxy The geometry proxy of the container view.
+     * @return A view that handles either long-press previews or simple taps.
+     */
+    @ViewBuilder
+    private func gestureOverlay(in proxy: GeometryProxy) -> some View {
+        if showPreview {
+            // Mode 1: Long-press to preview, release to place.
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            handleTouchDownOrMove(value.location, in: proxy)
+                        }
+                        .onEnded { value in
+                            handleTouchUp(value.location, in: proxy)
+                        }
+                )
+        } else {
+            // Mode 2: Simple tap to place.
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                        .onEnded { value in
+                            if let coord = findCoordinate(at: value.location, in: proxy.size),
+                               gameState.legalMoves.contains(coord) {
+                                _ = gameState.makeMove(at: coord)
+                            }
+                        }
+                )
+        }
+    }
+
+    /**
+     * @brief Handles the initial touch-down or drag-move of a gesture.
+     * @details It starts a timer for a long-press. If the gesture is held long enough,
+     *          it activates preview mode. If preview is already active, it updates the preview.
+     * @param location The current location of the touch.
+     * @param proxy The geometry proxy of the container view.
+     */
+    private func handleTouchDownOrMove(_ location: CGPoint, in proxy: GeometryProxy) {
+        guard !gameState.isAnimating else { return }
+
+        // If this is a new touch, start a task to detect a long press.
         if longPressTask == nil && !isPreviewActive {
             longPressTask = Task {
-                // 等待 0.3 秒
-                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
-                
-                // 如果任务没有被取消（手指没松开），则激活预览
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s delay
+                // If the task wasn't cancelled (finger is still down), activate preview mode.
                 if !Task.isCancelled {
                     await MainActor.run {
-                        // 激活预览模式，并显示当前位置的预览
                         isPreviewActive = true
                         updatePreview(at: location, in: proxy)
                     }
                 }
             }
         }
-        
-        // 2. 如果预览已经激活（无论是刚激活还是正在拖动），实时更新显示
+
+        // If preview mode is active, update the preview display as the finger moves.
         if isPreviewActive {
             updatePreview(at: location, in: proxy)
         }
     }
-    
-    func updatePreview(at location: CGPoint, in proxy: GeometryProxy) {
-        guard let coord = findCoordinate(at: location, in: proxy.size) else {
-            // 移出了有效区域
-            if previewCoord != nil {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    clearPreview()
-                }
-            }
+
+    /**
+     * @brief Handles the release of a touch gesture.
+     * @details It cancels the long-press detection task, places a piece if the location is valid,
+     *          and clears the preview state.
+     * @param location The final location of the touch.
+     * @param proxy The geometry proxy of the container view.
+     */
+    private func handleTouchUp(_ location: CGPoint, in proxy: GeometryProxy) {
+        // Cancel the long-press task and reset preview state.
+        longPressTask?.cancel()
+        longPressTask = nil
+        isPreviewActive = false
+
+        guard !gameState.isAnimating else {
+            clearPreviewAnimated()
             return
         }
-        
+
+        // Find the coordinate at the release point.
+        guard let coord = findCoordinate(at: location, in: proxy.size),
+              gameState.legalMoves.contains(coord) else {
+            // Released on an invalid spot, just clear the preview.
+            clearPreviewAnimated()
+            return
+        }
+
+        // If the move is legal (short tap or release after long-press), make the move.
+        _ = gameState.makeMove(at: coord)
+        clearPreviewAnimated()
+    }
+
+    // MARK: - Preview Logic
+
+    /**
+     * @brief Updates the preview state based on the user's touch location.
+     * @details Finds the coordinate under the touch. If it's a new, legal move,
+     *          it updates the `previewCoord` and `previewFlipped` state variables.
+     * @param location The current location of the touch.
+     * @param proxy The geometry proxy of the container view.
+     */
+    private func updatePreview(at location: CGPoint, in proxy: GeometryProxy) {
+        guard let coord = findCoordinate(at: location, in: proxy.size) else {
+            // Finger moved outside any valid cell.
+            if previewCoord != nil { clearPreviewAnimated() }
+            return
+        }
+
         if previewCoord != coord {
-            // 只有当移到新格子，且是合法步时才更新
             if gameState.legalMoves.contains(coord) {
+                // Moved to a new, legal cell. Update preview.
                 let flipped = gameState.previewFlipped(at: coord)
                 withAnimation(.easeOut(duration: 0.2)) {
                     previewCoord = coord
                     previewFlipped = Set(flipped)
                 }
             } else {
-                // 移到了不合法格子
-                withAnimation(.easeOut(duration: 0.2)) {
-                    clearPreview()
-                }
+                // Moved to an illegal cell. Clear preview.
+                clearPreviewAnimated()
             }
         }
     }
-    
-    func handleTouchUp(_ value: DragGesture.Value, in proxy: GeometryProxy) {
-       
-        longPressTask?.cancel()
-        longPressTask = nil
-                
-        // 重置状态
-        isPreviewActive = false
-        
-        guard !gameState.isAnimating else {
-            withAnimation(.easeOut(duration: 0.2)) { clearPreview() }
-            return
-        }
-        
-        let location = value.location
-        guard let coord = findCoordinate(at: location, in: proxy.size),
-              gameState.legalMoves.contains(coord) else {
-            // 在无效位置松手
-            withAnimation(.easeOut(duration: 0.2)) { clearPreview() }
-            return
-        }
-        
-        // 逻辑：
-        // A. 如果是短按（wasPreviewActive == false），直接落子。
-        // B. 如果是长按预览后松手（wasPreviewActive == true），通常也意味着确认落子。
-        _ = gameState.makeMove(at: coord)
-        
+
+    /// Resets the preview state variables.
+    private func clearPreview() {
+        previewCoord = nil
+        previewFlipped.removeAll()
+    }
+
+    /// Resets the preview state variables with a fade-out animation.
+    private func clearPreviewAnimated() {
         withAnimation(.easeOut(duration: 0.2)) {
             clearPreview()
         }
     }
-    
-    func clearPreview() {
-        previewCoord = nil
-        previewFlipped.removeAll()
-    }
-    
-    // MARK: - 坐标查找 (保持不变)
-    func findCoordinate(at location: CGPoint, in size: CGSize) -> TriangleCoordinate? {
+
+    // MARK: - Coordinate & Position Helpers
+
+    /**
+     * @brief Finds the `TriangleCoordinate` corresponding to a `CGPoint` in the view.
+     * @param location The point of interaction (e.g., a tap).
+     * @param size The total size of the container view.
+     * @return The `TriangleCoordinate` of the closest cell, or `nil` if none are close enough.
+     */
+    private func findCoordinate(at location: CGPoint, in size: CGSize) -> TriangleCoordinate? {
         let threshold = side / 2
         var bestCoord: TriangleCoordinate?
         var bestDistance: CGFloat = .infinity
-        
+
         for coord in geometry.allCoordinates {
             let center = position(for: coord, in: size)
             let distance = hypot(location.x - center.x, location.y - center.y)
@@ -179,27 +233,37 @@ struct BoardView: View {
         }
         return bestCoord
     }
-    
-    // MARK: - 坐标转位置 (保持不变)
-    func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
+
+    /**
+     * @brief Calculates the absolute `CGPoint` for a given `TriangleCoordinate`.
+     * @param coord The coordinate of the triangle cell.
+     * @param size The size of the container view.
+     * @return The `CGPoint` to use for positioning the cell in a `ZStack`.
+     */
+    private func position(for coord: TriangleCoordinate, in size: CGSize) -> CGPoint {
+        // Note: The sqrt(2.8) is a visual adjustment factor, not a strict geometric value.
         let height = side * sqrt(2.8) / 2
         let horizontalSpacing = side / 2
         let verticalSpacing = height
+
+        // Calculate offset from center based on axial coordinates.
         let centerX = horizontalSpacing * CGFloat(coord.q)
         let centerY = -verticalSpacing * CGFloat(coord.r)
-        // 根据棋盘类型调整锚点偏移,实现视觉平衡
-            let anchorOffsetY: CGFloat
-            switch type(of: geometry) {
-            case is HexagonBoard.Type, is DiamondBoard.Type:
-                anchorOffsetY = height / 2
-            case is TriangleBoard.Type:
-                anchorOffsetY = -height*0.9
-            default:
-                anchorOffsetY = height / 2
-            }
+
+        // Adjust anchor point offset for different board types to achieve visual balance.
+        let anchorOffsetY: CGFloat
+        switch type(of: geometry) {
+        case is HexagonBoard.Type, is DiamondBoard.Type:
+            anchorOffsetY = height / 2
+        case is TriangleBoard.Type:
+            anchorOffsetY = -height * 0.9
+        default:
+            anchorOffsetY = height / 2
+        }
+
+        // Calculate final absolute position.
         let x = size.width / 2 + centerX
         let y = size.height / 2 + centerY - anchorOffsetY
         return CGPoint(x: x, y: y)
     }
 }
-

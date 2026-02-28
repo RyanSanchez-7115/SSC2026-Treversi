@@ -1,17 +1,44 @@
 import SwiftUI
 
+/**
+ * @struct GameView
+ * @brief Main game view.
+ * @details Responsible for rendering the game board, player panels, game over modal, and handling turn skip messages.
+ */
 struct GameView: View {
+    
+    // MARK: - Behaviours & Configuration
+    
+    /// Game state object, responsible for core logic
     @StateObject private var gameState: GameState
-    let config: GameConfig
-    let onBack: (() -> Void)?
+    
+    /// Game configuration parameters
+    private let config: GameConfig
+    
+    /// Callback closure for returning to the previous screen
+    private let onBack: (() -> Void)?
 
+    // MARK: - UI State
+    
+    /// Local state controlling the game over modal display (mainly for sheet binding)
+    /// @note Actually depends on gameState.showGameOverModal
     @State private var showGameOverSheet = false
+    
+    /// Task for managing the auto-dismissal of the skip turn message
     @State private var skipMessageWorkItem: DispatchWorkItem?
 
+    // MARK: - Initialization
+    
+    /**
+     * @brief Initialize game view.
+     * @param config Game configuration object, containing board type, rule switches, etc.
+     * @param onBack Callback when the back button is clicked.
+     */
     init(config: GameConfig, onBack: (() -> Void)? = nil) {
         self.config = config
         self.onBack = onBack
 
+        // Generate corresponding board geometry based on configuration
         let geometry: BoardGeometry
         switch config.boardType {
         case .hexagon: geometry = HexagonBoard(radius: config.radius)
@@ -19,9 +46,10 @@ struct GameView: View {
         case .triangle: geometry = TriangleBoard(radius: config.radius)
         }
 
+        // Get initial layout
         let layout = config.boardType.getLayout(at: config.layoutIndex)
         
-        // 过滤布局（关键：应用开关）
+        // Filter special pieces (e.g., neutral, directional) from the layout based on configuration
         var filteredLayout = layout
         for (coord, piece) in filteredLayout {
             var finalPiece = piece
@@ -34,30 +62,48 @@ struct GameView: View {
             filteredLayout[coord] = finalPiece
         }
 
+        // Initialize GameState
         _gameState = StateObject(wrappedValue: GameState(geometry: geometry, initialOccupation: filteredLayout))
     }
 
+    // MARK: - Body
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                
+                // Skip turn message overlay
+                if let message = gameState.skipMessage {
+                    Text(message)
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(16)
+                        .rotationEffect(gameState.currentPlayer == .white ? .degrees(0) : .degrees(180))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        .background(Color.black.opacity(0.2))
+                        .zIndex(10)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                gameState.clearSkipMessage()
+                            }
+                        }
+                }
+                
+                // Main game area layout
                 VStack(spacing: 0) {
-                    // 顶部面板（对手）
-                    PlayerPanel(
-                        player: .white,
-                        opponent: .black,
-                        isCurrentPlayer: gameState.currentPlayer == .white, counts: gameState.countPieces(),
-                        enableUndo: config.enableUndo,
-                        isTop: true,
-                        onUndo: { _ = gameState.undoMove() },
-                        onRestart: { gameState.restart() },
-                        onBack: { onBack?() }
-                    )
-                    .frame(height: 100)
+                    
+                    // Top panel (White/Opponent)
+                    playerPanel(for: .white, isTop: true)
+                        .frame(height: 100)
 
+                    // Middle board area
                     ZStack {
                         Color.clear
                         
-                        if geometry.size.width > 10 && geometry.size.height > 10 {  // 安全阈值，避免 size 太小崩溃
+                        if geometry.size.width > 10 && geometry.size.height > 10 {
+                            // Safety threshold to avoid crashes due to small geometry size
                             BoardView(
                                 gameState: gameState,
                                 geometry: gameState.geometry,
@@ -71,57 +117,25 @@ struct GameView: View {
                                 maxHeight: min(geometry.size.width, geometry.size.height)
                             )
                         } else {
-                            // 占位视图，避免崩溃
+                            // Placeholder view to avoid layout calculation errors
                             ProgressView()
                                 .frame(width: 50, height: 50)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    // 底部面板（本方）
-                    PlayerPanel(
-                        player: .black,
-                        opponent: .white,
-                        isCurrentPlayer: gameState.currentPlayer == .black, counts: gameState.countPieces(),
-                        enableUndo: config.enableUndo,
-                        isTop: false,
-                        onUndo: { _ = gameState.undoMove() },
-                        onRestart: { gameState.restart() },
-                        onBack: { onBack?() }
-                    )
-                    .frame(height: 100)
+                    // Bottom panel (Black/Current Player)
+                    playerPanel(for: .black, isTop: false)
+                        .frame(height: 100)
                 }
 
-                // 跳过回合提示浮层
-                if let message = gameState.skipMessage {
-                    VStack {
-                        Text(message)
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(10)
-                    }
-                    .transition(.opacity)
-                    .onAppear {
-                        // 2秒后自动清除
-                        let workItem = DispatchWorkItem {
-                            withAnimation {
-                                gameState.clearSkipMessage()
-                            }
-                        }
-                        skipMessageWorkItem = workItem
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: workItem)
-                    }
-                    .onDisappear {
-                        skipMessageWorkItem?.cancel()
-                    }
-                }
+                // Overlay: Skip turn message
+                skipTurnOverlay
             }
         }
         .background(Color(.systemBackground))
         .ignoresSafeArea(edges: .horizontal)
-        // 游戏结束弹窗
+        // Game over modal
         .sheet(isPresented: $gameState.showGameOverModal) {
             if let info = gameState.gameOverInfo {
                 GameOverView(
@@ -139,14 +153,77 @@ struct GameView: View {
             }
         }
     }
+    
+    // MARK: - Subviews
+    
+    /**
+     * @brief Build player panel.
+     * @param player The player represented by this panel.
+     * @param isTop Whether it is displayed at the top of the screen (affects layout direction).
+     */
+    private func playerPanel(for player: Player, isTop: Bool) -> some View {
+        PlayerPanel(
+            player: player,
+            opponent: player.opponent,
+            isCurrentPlayer: gameState.currentPlayer == player,
+            counts: gameState.countPieces(),
+            enableUndo: config.enableUndo,
+            isTop: isTop,
+            onUndo: { _ = gameState.undoMove() },
+            onRestart: { gameState.restart() },
+            onBack: { onBack?() }
+        )
+    }
+    
+    /**
+     * @brief Overlay view for skip turn message.
+     */
+    private var skipTurnOverlay: some View {
+        Group {
+            if let message = gameState.skipMessage {
+                VStack {
+                    Text(message)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
+                }
+                .transition(.opacity)
+                .onAppear {
+                    // Automatically clear message after 2 seconds
+                    let workItem = DispatchWorkItem {
+                        withAnimation {
+                            gameState.clearSkipMessage()
+                        }
+                    }
+                    skipMessageWorkItem = workItem
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: workItem)
+                }
+                .onDisappear {
+                    skipMessageWorkItem?.cancel()
+                }
+            }
+        }
+    }
 }
 
-// 游戏结束视图
+/**
+ * @struct GameOverView
+ * @brief Game over display view.
+ * @details Shows the winner, piece counts for both sides, and provides options to restart or go back.
+ */
 struct GameOverView: View {
+    
+    /// The winning player (nil indicates a draw)
     let winner: Player?
+    /// Total count of black pieces
     let blackCount: Int
+    /// Total count of white pieces
     let whiteCount: Int
+    /// Restart callback
     let onRestart: () -> Void
+    /// Return to settings callback
     let onBack: () -> Void
 
     var body: some View {
@@ -163,6 +240,7 @@ struct GameOverView: View {
                     .font(.title2)
             }
 
+            // Score statistics
             HStack(spacing: 40) {
                 VStack {
                     Text("Black")
@@ -179,6 +257,7 @@ struct GameOverView: View {
             }
             .padding()
 
+            // Action buttons
             HStack(spacing: 20) {
                 Button("Restart") {
                     onRestart()

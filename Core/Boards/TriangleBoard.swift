@@ -3,7 +3,7 @@ import Foundation
 struct TriangleBoard: BoardGeometry {
     let radius: Int
     var displayName: String { "Trianguland" }
-    var description: String { "三角形棋盘，角是关键" }
+    var description: String { "Triangular chessboard, corners are key" }
     
     var allCoordinates: Set<TriangleCoordinate> {
         var coords = Set<TriangleCoordinate>()
@@ -31,6 +31,74 @@ struct TriangleBoard: BoardGeometry {
 }
 
 extension TriangleBoard {
+    static let layouts: [[TriangleCoordinate: Piece]] = [
+        // 0 Balanced
+        [
+            //black
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
+            //white
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
+            //special pieces
+            TriangleCoordinate(q: 1, r: 1, isPointingUp: false): .neutral,
+            TriangleCoordinate(q: -1, r: 1, isPointingUp: true): .directional(direction: 1)
+        ],
+        // 1 Aggressive
+        [
+            //black
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
+            //white
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .white,
+            //special pieces
+            TriangleCoordinate(q: -2, r: 1, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: 2, r: -1, isPointingUp: true): .directional(direction: 3)
+        ],
+        // 2 Defence
+        [
+            //black
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
+            //white
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
+            //special pieces
+            TriangleCoordinate(q: 0, r: 2, isPointingUp: false): .directional(direction: 4),
+            TriangleCoordinate(q: 0, r: -2, isPointingUp: false): .neutral
+        ],
+        // 3 Special
+        [
+            //black
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
+            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .black,
+            //white
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
+            //special pieces
+            TriangleCoordinate(q: 1, r: 1, isPointingUp: false): .neutral,
+            TriangleCoordinate(q: -1, r: 1, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: 2, r: -1, isPointingUp: true): .directional(direction: 0),
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .directional(direction: 3)
+        ]
+    ]
+    
+    static let layoutNames: [String] = ["Balanced", "Aggressive", "Defence", "Special"]
+}
+
+extension TriangleBoard {
     func isCoordinate(_ coord: TriangleCoordinate, withinRadius radius: Int) -> Bool {
         let r = coord.r
         let q = coord.q
@@ -39,46 +107,4 @@ extension TriangleBoard {
         let qEnd = radius*2 - 1 - r
         return q >= qStart && q <= qEnd
     }
-}
-
-extension TriangleBoard {
-    static let layouts: [[TriangleCoordinate: Piece]] = [
-        // 0 Original
-        [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white
-        ],
-        // 1 Classic
-        [
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: -2, isPointingUp: false): .black,
-            TriangleCoordinate(q: 1, r: -2, isPointingUp: false): .black,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 0, r: -2, isPointingUp: true): .white
-        ],
-        // 2 Irregular
-        [
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: false): .white,
-            TriangleCoordinate(q: 1, r: -2, isPointingUp: false): .white,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: true): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: true): .black,
-            TriangleCoordinate(q: 0, r: -2, isPointingUp: true): .black,
-            TriangleCoordinate(q: -1, r: -2, isPointingUp: false): .black
-        ],
-        // 3 Special
-        [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .directional(direction: 0),
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .directional(direction: 1),
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .directional(direction: 2),
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .directional(direction: 3),
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .directional(direction: 4),
-            TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .directional(direction: 5),
-            TriangleCoordinate(q: 0, r: -2, isPointingUp: false): .directional(direction: 5)
-        ]
-    ]
-    
-    static let layoutNames: [String] = ["Original", "Classic", "Asymmetrical", "Special"]
 }

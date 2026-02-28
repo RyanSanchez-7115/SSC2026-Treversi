@@ -1,28 +1,62 @@
 import SwiftUI
 
+/**
+ * @struct PlayerPanel
+ * @brief Player information and operation panel view.
+ * @details Displays the current player's piece count, turn indicator, and provides control buttons for undo, restart, and back.
+ */
 struct PlayerPanel: View {
+    
+    // MARK: - Configuration Properties
+    
     let player: Player
     let opponent: Player
+    
+    /// Indicates whether it is this player's turn to move (highlights background)
     let isCurrentPlayer: Bool
+    
     let counts: (black: Int, white: Int)
     let enableUndo: Bool
+    
+    /// Whether the panel is located at the top of the screen (top panel needs rotation to face the opponent)
     let isTop: Bool
+    
     let onUndo: () -> Void
     let onRestart: () -> Void
     let onBack: () -> Void
     
+    // MARK: - Computed Logic
+    
+    /**
+     * @brief Get the piece count for the player represented by this panel.
+     */
     private var myCount: Int {
         player == .black ? counts.black : counts.white
     }
     
+    /**
+     * @brief Get the piece count for the opponent.
+     */
     private var opponentCount: Int {
         opponent == .black ? counts.black : counts.white
     }
     
+    /**
+     * @brief Determine background color based on whose turn it is.
+     */
+    private var backgroundColor: Color {
+        isCurrentPlayer ? Color.cyan.opacity(0.3) : Color(.secondarySystemBackground)
+    }
+    
+    // MARK: - Body
+    
     var body: some View {
         VStack(spacing: 8) {
+            // Score display area
             HStack {
                 Spacer()
+                
+                // Own score
                 HStack(spacing: 4) {
                     TriangleIcon(player: player)
                         .frame(width: 30, height: 30)
@@ -30,10 +64,11 @@ struct PlayerPanel: View {
                         .font(.title2)
                         .bold()
                 }
-                 
+                
                 Divider()
                     .frame(height: 30)
-
+                
+                // Opponent score
                 HStack(spacing: 4) {
                     Text("\(opponentCount)")
                         .font(.title2)
@@ -41,10 +76,12 @@ struct PlayerPanel: View {
                     TriangleIcon(player: opponent)
                         .frame(width: 30, height: 30)
                 }
+                
                 Spacer()
             }
             .padding(.horizontal, 20)
             
+            // Button operation area
             HStack(spacing: 20) {
                 if enableUndo {
                     Button(action: onUndo) {
@@ -61,7 +98,7 @@ struct PlayerPanel: View {
                 .buttonStyle(PanelButtonStyle())
                 
                 Button(action: onBack) {
-                    Label("Back to Settings", systemImage: "xmark")
+                    Label("Back", systemImage: "xmark") // Simplified text to fit layout
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PanelButtonStyle())
@@ -74,16 +111,18 @@ struct PlayerPanel: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor)
         )
-        .padding(.horizontal, 30)                 
+        .padding(.horizontal, 30)
+        // Rotate 180 degrees if it's the top panel, for the opponent's view in local multiplayer
         .rotationEffect(isTop ? .degrees(180) : .zero)
     }
-    
-    private var backgroundColor: Color {
-            isCurrentPlayer ? Color.cyan.opacity(0.3) : Color(.secondarySystemBackground)
-        }
-
 }
 
+// MARK: - Helper Views & Styles
+
+/**
+ * @struct TriangleIcon
+ * @brief Simple triangle icon component for displaying player color.
+ */
 struct TriangleIcon: View {
     let player: Player
     
@@ -97,6 +136,10 @@ struct TriangleIcon: View {
     }
 }
 
+/**
+ * @struct PanelButtonStyle
+ * @brief Unified style for panel buttons.
+ */
 struct PanelButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -107,4 +150,3 @@ struct PanelButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
-

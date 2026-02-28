@@ -1,19 +1,29 @@
 import Foundation
 
+/// @brief Board geometry protocol defining basic properties
 protocol BoardGeometry {
+    /// @brief All valid coordinates
     var allCoordinates: Set<TriangleCoordinate> { get }
-    var initialOccupation: [TriangleCoordinate: Piece] { get }   // 改成 Piece
+    /// @brief Initial occupation mapping to piece types
+    var initialOccupation: [TriangleCoordinate: Piece] { get }
+    /// @brief Display name
     var displayName: String { get }
+    /// @brief Description text
     var description: String { get }
 }
 
+/// @brief Board type enumeration
 enum BoardType: String, CaseIterable, Identifiable {
     case hexagon
     case diamond
     case triangle
     
-    var id: String { self.rawValue }
+    /// @brief Unique identifier
+    var id: String { rawValue }
     
+    /// @brief Create geometry for a given radius
+    /// @param radius Radius
+    /// @return Board geometry instance
     func geometry(radius: Int) -> any BoardGeometry {
         switch self {
         case .hexagon:  return HexagonBoard(radius: radius)
@@ -22,6 +32,7 @@ enum BoardType: String, CaseIterable, Identifiable {
         }
     }
     
+    /// @brief Display name for the type
     var displayName: String {
         switch self {
         case .hexagon:  return "Classic Hexagon"
@@ -30,6 +41,7 @@ enum BoardType: String, CaseIterable, Identifiable {
         }
     }
     
+    /// @brief Available layout names for this type
     var layoutNames: [String] {
         switch self {
         case .hexagon:  return HexagonBoard.layoutNames
@@ -38,6 +50,9 @@ enum BoardType: String, CaseIterable, Identifiable {
         }
     }
     
+    /// @brief Get layout by index
+    /// @param index Layout index
+    /// @return Mapping from coordinate to piece; empty if out of range
     func getLayout(at index: Int) -> [TriangleCoordinate: Piece] {
         switch self {
         case .hexagon:
@@ -54,10 +69,14 @@ enum BoardType: String, CaseIterable, Identifiable {
 }
 
 extension BoardGeometry {
-    
+    /// @brief Default display name
     var displayName: String { "Unnamed Board" }
+    /// @brief Default description
     var description: String { "" }
     
+    /// @brief Get adjacent triangle coordinates for a coordinate
+    /// @param coordinate Target coordinate
+    /// @return Set of adjacent coordinates
     func neighbors(of coordinate: TriangleCoordinate) -> Set<TriangleCoordinate> {
         let (q, r, isUp) = (coordinate.q, coordinate.r, coordinate.isPointingUp)
         if isUp {
