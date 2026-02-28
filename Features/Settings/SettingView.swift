@@ -10,7 +10,7 @@ struct SettingView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             // 侧边栏：设置选项
             List {
-                Section("Board") {
+                Section(header: Text("Board").font(.system(size: 25, weight: .semibold))) {
                     
                     let layoutNames = previewState.boardType.layoutNames
                     
@@ -39,13 +39,13 @@ struct SettingView: View {
                     .pickerStyle(.automatic)
                 }
 
-                Section("Features") {
+                Section(header: Text("Features").font(.system(size: 25, weight: .semibold))) {
                     Toggle("Show Legal Moves", isOn: $previewState.showLegalMoves)
                     Toggle("Preview Moves", isOn: $config.showPreview)
                     Toggle("Enable Undo", isOn: $config.enableUndo)
                 }
                 
-                Section("Special Pieces") {
+                Section(header: Text("Special Piece").font(.system(size: 25, weight: .semibold))) {
                     Toggle("Neutral Pieces", isOn: $config.enableNeutral)
                         .onChange(of: config.enableNeutral) { newValue in
                             previewState.enableNeutral = newValue

@@ -54,6 +54,7 @@ enum BoardType: String, CaseIterable, Identifiable {
 }
 
 extension BoardGeometry {
+    
     var displayName: String { "Unnamed Board" }
     var description: String { "" }
     

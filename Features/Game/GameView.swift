@@ -19,8 +19,22 @@ struct GameView: View {
         case .triangle: geometry = TriangleBoard(radius: config.radius)
         }
 
-        let layout = config.boardType.getLayout(at: config.layoutIndex)   // 现在返回 Piece
-        _gameState = StateObject(wrappedValue: GameState(geometry: geometry, initialOccupation: layout))
+        let layout = config.boardType.getLayout(at: config.layoutIndex)
+        
+        // 过滤布局（关键：应用开关）
+        var filteredLayout = layout
+        for (coord, piece) in filteredLayout {
+            var finalPiece = piece
+            if !config.enableNeutral && piece == .neutral {
+                finalPiece = .empty
+            }
+            if !config.enableDirectional && piece.directionalDirection != nil {
+                finalPiece = .empty
+            }
+            filteredLayout[coord] = finalPiece
+        }
+
+        _gameState = StateObject(wrappedValue: GameState(geometry: geometry, initialOccupation: filteredLayout))
     }
 
     var body: some View {

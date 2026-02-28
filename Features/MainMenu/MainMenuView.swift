@@ -166,6 +166,15 @@ struct MainMenuView: View {
                             .background(Color.blue)
                             .cornerRadius(10)
                     }
+                    NavigationLink(destination: AboutView()) {
+                        Text("About Treversi")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.cyan)
+                            .cornerRadius(10)
+                    }
                 }
                 .padding(.horizontal, 40)
 

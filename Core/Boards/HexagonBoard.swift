@@ -38,12 +38,13 @@ extension HexagonBoard {
     static let layouts: [[TriangleCoordinate: Piece]] = [
         // 0 Classic
         [
-            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .directional(direction: 3),
+            TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .neutral,
             TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
             TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
+            TriangleCoordinate(q: -2, r: -1, isPointingUp: true): .directional(direction: 1),
         ],
         // 1 Symmetrical
         [
@@ -52,7 +53,13 @@ extension HexagonBoard {
             TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .black,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
             TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: -2, isPointingUp: false): .neutral,
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: -2, r: 0, isPointingUp: false): .directional(direction: 0),
+            TriangleCoordinate(q: 2, r: -1, isPointingUp: true): .directional(direction: 5)
+            
+            
         ],
         // 2 Line
         [
@@ -60,23 +67,30 @@ extension HexagonBoard {
             TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .black,
             TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .white,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: -2, r: -1, isPointingUp: true): .white
+            TriangleCoordinate(q: -2, r: -1, isPointingUp: true): .white,
+            TriangleCoordinate(q: -1, r: -2, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: -3, r: 1, isPointingUp: false): .neutral,
+            TriangleCoordinate(q: 1, r: -2, isPointingUp: true): .directional(direction: 1),
+            TriangleCoordinate(q: 1, r: 2, isPointingUp: true): .directional(direction: 3),
+           
         ],
-        // 3 Special（中立子 + 方向子）
+        // 3 Special
         [
             TriangleCoordinate(q: 0, r: 0, isPointingUp: false): .black,
-            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .black,
-            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .white,
+            TriangleCoordinate(q: 0, r: -1, isPointingUp: true): .white,
+            TriangleCoordinate(q: 1, r: 0, isPointingUp: true): .black,
             TriangleCoordinate(q: -1, r: 0, isPointingUp: true): .white,
-            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .white,
-            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .white,
-            TriangleCoordinate(q: 2, r: -1, isPointingUp: true): .neutral,
+            TriangleCoordinate(q: 2, r: 0, isPointingUp: false): .white,
+            TriangleCoordinate(q: 1, r: -1, isPointingUp: false): .neutral,
+            TriangleCoordinate(q: -1, r: -1, isPointingUp: false): .neutral,
             TriangleCoordinate(q: -2, r: -1, isPointingUp: true): .directional(direction: 1),
-            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .directional(direction: 4)
+            TriangleCoordinate(q: 0, r: 1, isPointingUp: true): .directional(direction: 4),
+            TriangleCoordinate(q: 2, r: -1, isPointingUp: false): .directional(direction: 5)
+         
         ]
     ]
     
-    static let layoutNames: [String] = ["Classic", "Symmetrical", "Line", "Special"]
+    static let layoutNames: [String] = ["Start", "Symmetrical", "Line", "Special"]
 }
 
 extension HexagonBoard {
