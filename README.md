@@ -11,7 +11,7 @@
 ## ✨ Features
 
 - **Triangular grid** – 6 directions for deeper strategy.
-- **Multiple boards** – Classic Hexagon, Diamond Field, Trianguland, each with its own geometry.
+- **Multiple boards** – Classic Hexagon, Diamond Field, Trianguland.
 - **Diverse starting layouts** – Pre‑set openings for different play styles.
 - **Special pieces** – Directional Tile (purple, arrow‑locked) and Neutral Tile (orange, usable by both players). Can be toggled on/off.
 - **Highly customisable** – Board size, starting layout, legal‑move highlight, preview, undo – mix and match freely.
@@ -34,7 +34,7 @@
 
 ## 🧠 Philosophy & Design
 
-Treversi embodies three Apple values:
+Treversi embodies Apple values:
 
 - **Innovation** – Transplanting Reversi onto a triangular grid, introducing special pieces, and offering multiple board designs.
 - **Design** – Carefully tuned flipping animation, a main menu logo spelled out by flipping triangles, and intuitive interactions.
@@ -98,9 +98,13 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 
 ## 🙏 Acknowledgements
 
-- Thanks to the advancement of AI technology, which enabled a programming beginner to implement complex geometric logic.
-- Thanks to the Swift Student Challenge for providing the opportunity to turn ideas into reality.
-- And most importantly, thanks to everyone who plays Treversi – your experience is my greatest motivation.
+I would like to express my sincere gratitude to:
+
+- **My teachers** – for their guidance, encouragement, and for sparking my passion for programming and design.
+- **My classmates and friends** – for their valuable feedback, creative suggestions, bug reports, and moral support throughout the development process. Late‑night discussions and spontaneous testing sessions made this project better in countless ways.
+- **The advancement of AI technology** – which enabled a programming beginner like me to implement complex geometric logic and animations with assistance.
+- **The Swift Student Challenge** – for providing the opportunity to turn ideas in my head into reality.
+- **And most importantly, everyone who plays Treversi** – your experience is my greatest motivation.
 
 ---
 
@@ -110,7 +114,7 @@ by **刁泓宁 (Hongning Diao)**
 
 ---
 
-# Treversi：形状的策略（中文）
+# Treversi：形状的策略
 
 ## ✨ 功能特色
 
@@ -134,7 +138,7 @@ by **刁泓宁 (Hongning Diao)**
 
 ## 🧠 理念与设计
 
-Treversi 体现了三项苹果价值观：
+Treversi 里的苹果价值观：
 
 - **创新** – 将黑白棋移植到三角形网格，引入特殊棋子，并设计多种棋盘形态。
 - **设计** – 精心调校的翻转动画，主菜单中由三角形棋子逐个翻转拼出的标志，以及直观的交互。
@@ -190,9 +194,13 @@ Xcode 就会打开当前文件夹作为 Swift Package 项目。
 
 ## 🙏 致谢
 
-- 感谢 AI 技术的进步，让编程初学者也能实现如此复杂的几何逻辑。
-- 感谢 Swift 学生挑战赛，让我有机会将脑中的想法变为现实。
-- 最重要的是，感谢每一位玩 Treversi 的玩家——你们的体验是我最大的动力。
+衷心感谢：
+
+- **我的老师们** – 感谢你们的指导、鼓励，以及点燃我对编程和设计的热情。
+- **我的同学们和朋友们** – 感谢你们宝贵的反馈、富有创造性的建议、Bug 报告，以及整个开发过程中的精神支持。深夜的讨论和随时的测试让这个项目在无数细节上变得更好。
+- **AI 技术的进步** – 让像我这样的编程初学者也能在帮助下实现如此复杂的几何逻辑和动画。
+- **Swift 学生挑战赛** – 让我有机会将脑中的想法变为现实。
+- **最重要的是，感谢每一位玩 Treversi 的玩家** – 你们的体验是我最大的动力。
 
 ---
 
