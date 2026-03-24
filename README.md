@@ -110,7 +110,7 @@ I would like to express my sincere gratitude to:
 
 **Built with SwiftUI**  
 For Swift Student Challenge 2026  
-by **刁泓宁 (Hongning Diao)**
+by **Ryan Sanchez (Hongning Diao)**
 
 ---
 
@@ -206,4 +206,4 @@ Xcode 就会打开当前文件夹作为 Swift Package 项目。
 
 **使用 SwiftUI 构建**  
 献给 Swift Student Challenge 2026  
-刁泓宁 著
+RyanSanchez 著
